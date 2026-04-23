@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/handlers"
+	"github.com/kirillshkro/gmart-loyalty/internal/services"
 )
 
 func main() {
@@ -12,6 +14,10 @@ func main() {
 }
 
 func setupRouter() *mux.Router {
+	cfg := config.GetAppConfig()
+	userService := services.NewUserService(cfg)
+	orderService := services.NewOrderService(cfg)
+	balanceService := services.NewBalanceService(cfg)
 	r := mux.NewRouter()
 	r.Handle("/api/user/register", handlers.RegisterUser(userService)).Methods(http.MethodPost)
 	r.Handle("/api/user/login", handlers.LoginUser(userService))
