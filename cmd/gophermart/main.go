@@ -1,3 +1,24 @@
 package main
 
-func main() {}
+import (
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/kirillshkro/gmart-loyalty/internal/handlers"
+)
+
+func main() {
+	router := setupRouter()
+}
+
+func setupRouter() *mux.Router {
+	r := mux.NewRouter()
+	r.Handle("/api/user/register", handlers.RegisterUser(userService)).Methods(http.MethodPost)
+	r.Handle("/api/user/login", handlers.LoginUser(userService))
+	r.Handle("/api/user/orders", handlers.SetOrderUser(orderService)).Methods(http.MethodPost)
+	r.Handle("/api/user/orders", handlers.OrdersByUser(orderService)).Methods(http.MethodGet)
+	r.Handle("api/user/balance", handlers.UserBalance(balanceService)).Methods(http.MethodGet)
+	r.Handle("/api/user/balance/withdraw", handlers.SetUserWithdraw(balanceService)).Methods(http.MethodPost)
+	r.Handle("/api/user/withdrawals", handlers.UserWithdrawals(balanceService)).Methods(http.MethodGet)
+	return r
+}
