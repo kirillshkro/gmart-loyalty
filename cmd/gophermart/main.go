@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -10,11 +11,12 @@ import (
 )
 
 func main() {
-	router := setupRouter()
+	cfg := config.GetAppConfig()
+	router := setupRouter(cfg)
+	log.Fatal(http.ListenAndServe(cfg.RunAddress, router))
 }
 
-func setupRouter() *mux.Router {
-	cfg := config.GetAppConfig()
+func setupRouter(cfg *config.AppConfig) *mux.Router {
 	userService := services.NewUserService(cfg)
 	orderService := services.NewOrderService(cfg)
 	balanceService := services.NewBalanceService(cfg)
