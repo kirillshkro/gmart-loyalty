@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/mux v1.8.1
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/stretchr/testify v1.11.1
