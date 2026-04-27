@@ -13,6 +13,10 @@ type AppConfig struct {
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 
+type AuthConfig struct {
+	SecretKey string `env:"AUTH_SECRET_KEY"`
+}
+
 func GetAppConfig() *AppConfig {
 	var (
 		cfg  AppConfig
@@ -22,6 +26,19 @@ func GetAppConfig() *AppConfig {
 	once.Do(func() {
 		if err := cleanenv.ReadConfig(".env", &cfg); err != nil {
 			log.Fatalln(err)
+		}
+	})
+	return &cfg
+}
+
+func GetAuthConfig() *AuthConfig {
+	var (
+		cfg  AuthConfig
+		once sync.Once
+	)
+	once.Do(func() {
+		if err := cleanenv.ReadConfig(".env", &cfg); err != nil {
+			log.Fatal(err)
 		}
 	})
 	return &cfg
