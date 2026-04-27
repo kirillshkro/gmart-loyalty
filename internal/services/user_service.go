@@ -1,13 +1,24 @@
 package services
 
-import "github.com/kirillshkro/gmart-loyalty/internal/config"
+import (
+	"github.com/kirillshkro/gmart-loyalty/internal/config"
+)
 
 type UserService struct {
-	cfg *config.AppConfig
+	cfg     *config.AppConfig
+	authCfg *config.AuthConfig
 }
 
-func NewUserService(cfg *config.AppConfig) *UserService {
+type IUserService interface {
+	Registerer
+	Loginer
+}
+
+func NewUserService() *UserService {
+	userCfg := config.GetAppConfig()
+	authCfg := config.GetAuthConfig()
 	return &UserService{
-		cfg: cfg,
+		cfg:     userCfg,
+		authCfg: authCfg,
 	}
 }
