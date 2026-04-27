@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
-	"github.com/kirillshkro/gmart-loyalty/internal/handlers"
 	"github.com/kirillshkro/gmart-loyalty/internal/services"
 )
 
@@ -21,12 +20,13 @@ func setupRouter(cfg *config.AppConfig) *mux.Router {
 	orderService := services.NewOrderService(cfg)
 	balanceService := services.NewBalanceService(cfg)
 	r := mux.NewRouter()
-	r.Handle("/api/user/register", handlers.RegisterUser(userService)).Methods(http.MethodPost)
-	r.Handle("/api/user/login", handlers.LoginUser(userService))
-	r.Handle("/api/user/orders", handlers.SetOrderUser(orderService)).Methods(http.MethodPost)
-	r.Handle("/api/user/orders", handlers.OrdersByUser(orderService)).Methods(http.MethodGet)
-	r.Handle("api/user/balance", handlers.UserBalance(balanceService)).Methods(http.MethodGet)
-	r.Handle("/api/user/balance/withdraw", handlers.SetUserWithdraw(balanceService)).Methods(http.MethodPost)
-	r.Handle("/api/user/withdrawals", handlers.UserWithdrawals(balanceService)).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/register", userService.Register).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/login", userService.Login).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/orders", orderService.SetOrderUser).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/orders", orderService.OrdersByUser).Methods(http.MethodGet)
+	r.HandleFunc("api/user/balance", balanceService.UserBalance).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/balance/withdraw", balanceService.SetUserWithdraw).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/withdrawals", balanceService.UserWithdrawals).Methods(http.MethodGet)
+	r.Use(userService.AuthMiddleware)
 	return r
 }
