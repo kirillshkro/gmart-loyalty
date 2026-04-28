@@ -1,8 +1,8 @@
 package model
 
 type User struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	Name     string `json:"name" gorm:"index;not null"`
+	Password string `json:"password" gorm:"not null"`
 }
 
 type UserProfile struct {

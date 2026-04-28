@@ -2,11 +2,13 @@ package services
 
 import (
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
+	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 )
 
 type UserService struct {
 	cfg     *config.AppConfig
 	authCfg *config.AuthConfig
+	Repo    repository.UserRepository
 }
 
 type IUserService interface {
