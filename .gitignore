@@ -24,3 +24,4 @@ vendor/
 
 #External dev files
 .env
+Dockerfile
