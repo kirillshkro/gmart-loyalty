@@ -16,7 +16,7 @@ func main() {
 }
 
 func setupRouter(cfg *config.AppConfig) *mux.Router {
-	userService := services.NewUserService(cfg)
+	userService := services.NewUserService()
 	orderService := services.NewOrderService(cfg)
 	balanceService := services.NewBalanceService(cfg)
 	r := mux.NewRouter()
