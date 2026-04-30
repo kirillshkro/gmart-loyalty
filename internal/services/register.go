@@ -33,6 +33,11 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if regUser.Password != regUser.Password2 {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
 	profile = model.UserProfile{
 		User: regUser,
 	}

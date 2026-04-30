@@ -52,7 +52,7 @@ func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
 func (u UserRepository) onConflict() *gorm.DB {
 	return u.db.Clauses(
 		clause.OnConflict{
-			Columns:   []clause.Column{{Name: "username"}},
+			Columns:   []clause.Column{{Name: "name"}},
 			DoNothing: true,
 		},
 		clause.Returning{Columns: []clause.Column{{Name: "id"}}},

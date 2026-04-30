@@ -54,8 +54,9 @@ func (s *TestUserSuite) TearDownSuite() {
 func (s *TestUserSuite) Test_RegisterUser() {
 	//Создаем модель юзера
 	user := model.User{
-		Name:     "John Doe",
-		Password: "password123",
+		Name:      "John Doe",
+		Password:  "password123",
+		Password2: "password123",
 	}
 	//Создаем запрос и записываем в него данные
 	userJSON, _ := json.Marshal(user)
@@ -112,12 +113,14 @@ func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
 // Проверяем обработку запроса с существующим именем пользователя
 func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	user1 := model.User{
-		Name:     "existinguser",
-		Password: "password",
+		Name:      "existinguser",
+		Password:  "password",
+		Password2: "password",
 	}
 	user2 := model.User{
-		Name:     "existinguser",
-		Password: "password2",
+		Name:      "existinguser",
+		Password:  "password2",
+		Password2: "password2",
 	}
 
 	reqBody1, _ := json.Marshal(user1)
@@ -130,6 +133,19 @@ func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	w = httptest.NewRecorder()
 	s.service.Register(w, req2)
 	s.Equal(http.StatusConflict, w.Code)
+}
+
+func (s *TestUserSuite) Test_PasswordsNotEquals() {
+	user := model.User{
+		Name:      "newuser",
+		Password:  "password1",
+		Password2: "password2",
+	}
+	reqBody, _ := json.Marshal(user)
+	req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody))
+	w := httptest.NewRecorder()
+	s.service.Register(w, req)
+	s.Equal(http.StatusBadRequest, w.Code)
 }
 
 func TestMainUserSuite(t *testing.T) {
