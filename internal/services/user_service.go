@@ -8,7 +8,7 @@ import (
 type UserService struct {
 	cfg     *config.AppConfig
 	authCfg *config.AuthConfig
-	Repo    repository.UserRepository
+	Repo    repository.IUserRepository
 }
 
 type IUserService interface {
