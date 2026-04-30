@@ -25,6 +25,12 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 	if err = json.NewDecoder(r.Body).Decode(&regUser); err != nil {
 		log.Println(err)
 		http.Error(w, "Invalid request", http.StatusInternalServerError)
+		return
+	}
+
+	if regUser.Name == "" || regUser.Password == "" {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
 
 	profile = model.UserProfile{
@@ -32,11 +38,12 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = u.Repo.Create(profile); err != nil {
-		log.Println(err)
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
-		if _, ok = errors.AsType[types.ErrDuplicateUser](err); ok {
+		if _, ok = errors.AsType[*types.ErrDuplicateUser](err); ok {
 			w.WriteHeader(http.StatusConflict)
+			return
 		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
