@@ -2,9 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
+	"github.com/kirillshkro/gmart-loyalty/internal/types"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type IUserRepository interface {
@@ -22,7 +25,13 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 	}
 }
 func (u *UserRepository) Create(userProfile model.UserProfile) error {
-	if err := gorm.G[model.UserProfile](u.db).Create(context.Background(), &userProfile); err != nil {
+	th := u.onConflict()
+	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return &types.ErrDuplicateUser{
+				UserName: userProfile.Name,
+			}
+		}
 		return err
 	}
 	return nil
@@ -38,4 +47,14 @@ func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
 		return model.UserProfile{}, err
 	}
 	return up, nil
+}
+
+func (u UserRepository) onConflict() *gorm.DB {
+	return u.db.Clauses(
+		clause.OnConflict{
+			Columns:   []clause.Column{{Name: "username"}},
+			DoNothing: true,
+		},
+		clause.Returning{Columns: []clause.Column{{Name: "id"}}},
+	)
 }
