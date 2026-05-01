@@ -50,24 +50,7 @@ func (s *TestUserSuite) TearDownSuite() {
 
 }
 
-// Тест нормального запроса, без ошибок
-func (s *TestUserSuite) Test_RegisterUser() {
-	//Создаем модель юзера
-	user := model.User{
-		Name:      "John Doe",
-		Password:  "password123",
-		Password2: "password123",
-	}
-	//Создаем запрос и записываем в него данные
-	userJSON, _ := json.Marshal(user)
-	req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(userJSON))
-	w := httptest.NewRecorder()
-	s.service.Register(w, req)
-	//Проверяем статус код ответа
-	s.Equal(http.StatusOK, w.Code)
-}
-
-// Что будет, если логин или пароль пустой?
+// Тест регистрации пользователя
 func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
 	testCases := []struct {
 		name         string
@@ -75,6 +58,12 @@ func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
 		password     string
 		expectedCode int
 	}{
+		{
+			name:         "Normal register",
+			username:     "John Doe",
+			password:     "password123",
+			expectedCode: http.StatusOK,
+		},
 		{
 			name:         "Empty Username",
 			username:     "",
@@ -98,7 +87,7 @@ func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
-				Name:     tc.username,
+				UserName: tc.username,
 				Password: tc.password,
 			}
 			userJSON, _ := json.Marshal(user)
@@ -113,12 +102,12 @@ func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
 // Проверяем обработку запроса с существующим именем пользователя
 func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	user1 := model.User{
-		Name:      "existinguser",
+		UserName:  "existinguser",
 		Password:  "password",
 		Password2: "password",
 	}
 	user2 := model.User{
-		Name:      "existinguser",
+		UserName:  "existinguser",
 		Password:  "password2",
 		Password2: "password2",
 	}
@@ -137,7 +126,7 @@ func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 
 func (s *TestUserSuite) Test_PasswordsNotEquals() {
 	user := model.User{
-		Name:      "newuser",
+		UserName:  "newuser",
 		Password:  "password1",
 		Password2: "password2",
 	}

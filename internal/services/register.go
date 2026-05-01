@@ -28,7 +28,7 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if regUser.Name == "" || regUser.Password == "" {
+	if regUser.UserName == "" || regUser.Password == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}

@@ -38,7 +38,7 @@ func (s *TestUserSuite) Test_Login() {
 
 	//создать юзера для теста
 	testUser := model.User{
-		Name:      "testusermatch",
+		UserName:  "testusermatch",
 		Password:  "password123",
 		Password2: "password123",
 	}
@@ -51,7 +51,7 @@ func (s *TestUserSuite) Test_Login() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
-				Name:      tc.username,
+				UserName:  tc.username,
 				Password:  tc.password,
 				Password2: tc.password,
 			}
