@@ -29,7 +29,7 @@ func (u *UserRepository) Create(userProfile model.UserProfile) error {
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return &types.ErrDuplicateUser{
-				UserName: userProfile.Name,
+				UserName: userProfile.UserName,
 			}
 		}
 		return err
@@ -52,7 +52,7 @@ func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
 func (u UserRepository) onConflict() *gorm.DB {
 	return u.db.Clauses(
 		clause.OnConflict{
-			Columns:   []clause.Column{{Name: "name"}},
+			Columns:   []clause.Column{{Name: "user_name"}},
 			DoNothing: true,
 		},
 		clause.Returning{Columns: []clause.Column{{Name: "id"}}},
