@@ -13,6 +13,7 @@ import (
 type IUserRepository interface {
 	Create(profile model.UserProfile) error
 	GetByID(id int) (model.UserProfile, error)
+	GetByName(username string) (model.UserProfile, error)
 }
 
 type UserRepository struct {
@@ -44,6 +45,17 @@ func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
 	)
 
 	if up, err = gorm.G[model.UserProfile](u.db).Where("id = ?", id).First(context.Background()); err != nil {
+		return model.UserProfile{}, err
+	}
+	return up, nil
+}
+
+func (u UserRepository) GetByName(userName string) (model.UserProfile, error) {
+	var (
+		up  model.UserProfile
+		err error
+	)
+	if up, err = gorm.G[model.UserProfile](u.db).Where("user_name = ?", userName).First(context.Background()); err != nil {
 		return model.UserProfile{}, err
 	}
 	return up, nil
