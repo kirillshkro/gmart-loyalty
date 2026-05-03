@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserIDKey string
@@ -51,5 +52,12 @@ func (u UserService) validateUser(user model.User) bool {
 	if user.UserName == "" || user.Password == "" {
 		return false
 	}
-	return true
+	//Проверка сущетвования пользователя в базе данных
+	profile, err := u.Repo.GetByName(user.UserName)
+	if err != nil {
+		return false
+	}
+	//Проверка пароля с помощью bcrypt
+	err = bcrypt.CompareHashAndPassword([]byte(profile.Password), []byte(user.Password))
+	return err == nil
 }
