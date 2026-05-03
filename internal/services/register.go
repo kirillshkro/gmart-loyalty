@@ -8,6 +8,7 @@ import (
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Registerer interface {
@@ -37,6 +38,17 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Passwords do not match", http.StatusBadRequest)
 		return
 	}
+
+	//Шифруем пароль пользователя
+	cryptPass, err := bcrypt.GenerateFromPassword([]byte(regUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error encrypting password", http.StatusInternalServerError)
+		return
+	}
+	regUser.Password = string(cryptPass)
+	regUser.Password2 = regUser.Password
+	//Создаем профиль пользователя
 
 	profile = model.UserProfile{
 		User: regUser,
