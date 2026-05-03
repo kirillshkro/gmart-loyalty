@@ -29,7 +29,7 @@ func (s *TestUserSuite) Test_Login() {
 			expectedCode: http.StatusUnauthorized,
 		},
 		{
-			name:         "Empty username",
+			name:         "Empty login username",
 			username:     "",
 			password:     "password123",
 			expectedCode: http.StatusBadRequest,
@@ -48,6 +48,7 @@ func (s *TestUserSuite) Test_Login() {
 	reqTestUser := httptest.NewRequest(http.MethodPost, "/api/user/register", &testUserBody)
 	rr := httptest.NewRecorder()
 	s.service.Register(rr, reqTestUser)
+	authMiddleware := s.service.AuthMiddleware(http.HandlerFunc(s.service.Login)).(http.HandlerFunc)
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
@@ -59,8 +60,10 @@ func (s *TestUserSuite) Test_Login() {
 			s.Require().NoError(err)
 			req := httptest.NewRequest(http.MethodPost, "/api/user/login", &testUserBody)
 			rr = httptest.NewRecorder()
-			s.service.Login(rr, req)
-			s.Equal(tc.expectedCode, rr.Code)
+			authMiddleware(rr, req)
+			resp := rr.Result()
+			defer resp.Body.Close()
+			s.Equal(tc.expectedCode, resp.StatusCode)
 		})
 	}
 }

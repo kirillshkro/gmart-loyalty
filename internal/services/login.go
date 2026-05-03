@@ -2,11 +2,14 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 )
+
+type UserIDKey string
+
+const UserID UserIDKey = "user_id"
 
 type Loginer interface {
 	Login(w http.ResponseWriter, r *http.Request)
@@ -14,7 +17,10 @@ type Loginer interface {
 
 func (u UserService) Login(w http.ResponseWriter, r *http.Request) {
 	//Получить пользователя из запроса
-	var user model.User
+	var (
+		user model.User
+		err  error
+	)
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -25,10 +31,18 @@ func (u UserService) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Получить пользователя из базы данных
-	if _, err := u.Repo.GetByName(user.UserName); err != nil {
-		http.Error(w, fmt.Errorf("User %s not found", user.UserName).Error(), http.StatusUnauthorized)
+	if _, err = u.Repo.GetByName(user.UserName); err != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
+	//Создвать куки для пользователя
+	userCookie, err := u.createCookie()
+	if err != nil {
+		http.Error(w, "Cannot create cookie", http.StatusInternalServerError)
+		return
+	}
+	//Установить куки в ответе
+	http.SetCookie(w, userCookie)
 	w.WriteHeader(http.StatusOK)
 }
 
