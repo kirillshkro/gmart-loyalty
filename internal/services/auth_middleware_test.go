@@ -1,0 +1,42 @@
+package services
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/kirillshkro/gmart-loyalty/internal/model"
+)
+
+// Тест AuthMiddleware для проверки авторизации пользователя.
+func (s *TestUserSuite) Test_AuthMiddleware() {
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	// Создаем токен для теста
+	user := model.User{
+		UserName:  "testuser2",
+		Password:  "password123",
+		Password2: "password123",
+	}
+
+	var body bytes.Buffer
+
+	if err := json.NewEncoder(&body).Encode(user); err != nil {
+		s.T().Error(err)
+	}
+
+	wrapped := s.service.AuthMiddleware(http.HandlerFunc(testHandler)).(http.HandlerFunc)
+	req := httptest.NewRequest(http.MethodPost, "/api/user/login", &body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	wrapped(rr, req)
+	resp := rr.Result()
+	defer resp.Body.Close()
+	s.Equal(http.StatusOK, resp.StatusCode)
+	for _, cookie := range resp.Cookies() {
+		s.Assert().Equal("auth_cookie", cookie.Name)
+	}
+}
