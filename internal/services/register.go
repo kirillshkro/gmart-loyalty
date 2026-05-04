@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
@@ -24,7 +23,6 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 		err     error
 	)
 	if err = json.NewDecoder(r.Body).Decode(&regUser); err != nil {
-		log.Println(err)
 		http.Error(w, "Invalid request", http.StatusInternalServerError)
 		return
 	}
@@ -42,7 +40,6 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 	//Шифруем пароль пользователя
 	cryptPass, err := bcrypt.GenerateFromPassword([]byte(regUser.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error encrypting password", http.StatusInternalServerError)
 		return
 	}
