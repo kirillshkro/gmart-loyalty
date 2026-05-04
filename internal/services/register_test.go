@@ -26,7 +26,7 @@ type TestUserSuite struct {
 func (s *TestUserSuite) SetupTest() {
 	l := logger.NewSlogLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil)), logger.Config{
 		Colorful:             true,
-		ParameterizedQueries: true,
+		ParameterizedQueries: false,
 		SlowThreshold:        1000 * time.Millisecond,
 		LogLevel:             logger.Info,
 	})
