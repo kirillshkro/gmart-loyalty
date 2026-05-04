@@ -5,6 +5,7 @@ import (
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OrderRepository struct {
@@ -22,6 +23,7 @@ type Setter interface {
 
 type Getter interface {
 	GetByID(id int) (model.Order, error)
+	GetAll() ([]model.Order, error)
 }
 
 func NewOrderRepository(db *gorm.DB) IOrderRepository {
@@ -46,4 +48,21 @@ func (o OrderRepository) GetByID(id int) (model.Order, error) {
 		return model.Order{}, err
 	}
 	return order, nil
+}
+
+func (o OrderRepository) GetAll() ([]model.Order, error) {
+	var (
+		orders []model.Order
+		err    error
+	)
+	if orders, err = gorm.G[model.Order](o.db).Order(
+		clause.OrderByColumn{
+			Desc:   false,
+			Column: clause.Column{Name: "created_at"},
+		},
+	).Find(context.Background()); err != nil {
+		return nil, err
+	}
+	return orders, nil
+
 }
