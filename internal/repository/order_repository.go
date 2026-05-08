@@ -25,8 +25,8 @@ type Setter interface {
 }
 
 type Getter interface {
-	GetByID(id int) (model.Order, error)
-	GetAll() ([]model.Order, error)
+	GetByID(ctx context.Context, id int) (model.Order, error)
+	GetAll(ctx context.Context) ([]model.Order, error)
 }
 
 func NewOrderRepository(db *gorm.DB) IOrderRepository {
@@ -56,28 +56,30 @@ func (o OrderRepository) Create(order model.Order) error {
 	return err
 }
 
-func (o OrderRepository) GetByID(id int) (model.Order, error) {
+func (o OrderRepository) GetByID(ctx context.Context, id int) (model.Order, error) {
 	var (
 		order model.Order
 		err   error
 	)
-	if order, err = gorm.G[model.Order](o.db).Where("id = ?", id).First(context.Background()); err != nil {
+	userID := ctx.Value("user_id").(int)
+	if order, err = gorm.G[model.Order](o.db).Where("id = ? AND user_id = ?", id, userID).First(ctx); err != nil {
 		return model.Order{}, err
 	}
 	return order, nil
 }
 
-func (o OrderRepository) GetAll() ([]model.Order, error) {
+func (o OrderRepository) GetAll(ctx context.Context) ([]model.Order, error) {
 	var (
 		orders []model.Order
 		err    error
 	)
+	userID := ctx.Value("user_id").(int)
 	if orders, err = gorm.G[model.Order](o.db).Order(
 		clause.OrderByColumn{
 			Desc:   false,
 			Column: clause.Column{Name: "created_at"},
 		},
-	).Find(context.Background()); err != nil {
+	).Where("user_id = ?", userID).Find(ctx); err != nil {
 		return nil, err
 	}
 	return orders, nil
