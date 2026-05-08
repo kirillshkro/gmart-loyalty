@@ -23,9 +23,7 @@ type IOrderService interface {
 }
 
 func NewOrderService(cfg *config.AppConfig) *OrderService {
-	return &OrderService{
-		Repo: repository.NewOrderRepository(),
-	}
+	return &OrderService{}
 }
 
 func (o *OrderService) SetOrderUser(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +59,4 @@ func (o *OrderService) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
-}
-
-func (o OrderService) OrdersByUser(w http.ResponseWriter, r *http.Request) {
 }
