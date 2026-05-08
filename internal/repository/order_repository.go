@@ -21,7 +21,7 @@ type IOrderRepository interface {
 }
 
 type Setter interface {
-	Create(ctx context.Context, order model.Order) error
+	Create(order model.Order) error
 }
 
 type Getter interface {
@@ -35,12 +35,12 @@ func NewOrderRepository(db *gorm.DB) IOrderRepository {
 	}
 }
 
-func (o OrderRepository) Create(ctx context.Context, order model.Order) error {
+func (o OrderRepository) Create(order model.Order) error {
 	th := o.onConflict()
 	err := th.Transaction(func(tx *gorm.DB) error {
-		if err := gorm.G[model.Order](tx).Create(ctx, &order); err != nil {
+		if err := gorm.G[model.Order](tx).Create(context.Background(), &order); err != nil {
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				anotherUser, err := gorm.G[model.UserProfile](tx).Select("user_id").Where("order_num=?", order.OrderNum).First(ctx)
+				anotherUser, err := gorm.G[model.UserProfile](tx).Select("user_id").Where("order_num=?", order.OrderNum).First(context.Background())
 				if err != nil {
 					return fmt.Errorf("user %d can't own order %s", anotherUser.ID, order.OrderNum)
 				}
