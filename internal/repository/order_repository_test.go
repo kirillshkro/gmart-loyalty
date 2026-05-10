@@ -33,7 +33,7 @@ func (o *OrderTestSuite) SetupSuite() {
 	}
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), opts)
 	o.Require().NoError(err)
-	o.repo = NewOrderRepository(db)
+	o.repo = NewRepository(db)
 }
 
 func (o *OrderTestSuite) TearDownSuite() {

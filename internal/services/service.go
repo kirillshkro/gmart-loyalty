@@ -3,33 +3,41 @@ package services
 import (
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 )
 
 type Service struct {
 	logger  *log.Logger
 	cfg     *config.AppConfig
 	authCfg *config.AuthConfig
-	db      *gorm.DB
+	Repo    repository.IRepository
 }
 
-func NewService() (*Service, error) {
+func NewService() *Service {
 	cfg := config.GetAppConfig()
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
-		PrepareStmt:    true,
-		TranslateError: true,
-	})
-	if err != nil {
-		return nil, err
-	}
+
 	return &Service{
 		logger:  slog.NewLogLogger(slog.NewJSONHandler(os.Stderr, nil), slog.LevelError),
 		cfg:     cfg,
 		authCfg: config.GetAuthConfig(),
-		db:      db,
-	}, nil
+	}
+}
+
+type IBalanceService interface {
+	UserBalance(w http.ResponseWriter, r *http.Request)
+	SetUserWithdraw(w http.ResponseWriter, r *http.Request)
+	UserWithdrawals(w http.ResponseWriter, r *http.Request)
+}
+
+func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
+}
+
+func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
+}
+
+func (s Service) UserWithdrawals(w http.ResponseWriter, r *http.Request) {
 }

@@ -21,24 +21,18 @@ type IOrderRepository interface {
 }
 
 type Setter interface {
-	Create(order model.Order) error
+	CreateOrder(order *model.Order) error
 }
 
 type Getter interface {
-	GetByID(ctx context.Context, id int) (model.Order, error)
+	OrderByID(ctx context.Context, id int) (model.Order, error)
 	GetAll(ctx context.Context) ([]model.Order, error)
 }
 
-func NewOrderRepository(db *gorm.DB) IOrderRepository {
-	return &OrderRepository{
-		db: db,
-	}
-}
-
-func (o OrderRepository) Create(order model.Order) error {
-	th := o.onConflict()
+func (o Repository) CreateOrder(order *model.Order) error {
+	th := o.onOrderConflict()
 	err := th.Transaction(func(tx *gorm.DB) error {
-		if err := gorm.G[model.Order](tx).Create(context.Background(), &order); err != nil {
+		if err := gorm.G[model.Order](tx).Create(context.Background(), order); err != nil {
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
 				anotherUser, err := gorm.G[model.UserProfile](tx).Select("user_id").Where("order_num=?", order.OrderNum).First(context.Background())
 				if err != nil {
@@ -56,7 +50,7 @@ func (o OrderRepository) Create(order model.Order) error {
 	return err
 }
 
-func (o OrderRepository) GetByID(ctx context.Context, id int) (model.Order, error) {
+func (o Repository) OrderByID(ctx context.Context, id int) (model.Order, error) {
 	var (
 		order model.Order
 		err   error
@@ -68,7 +62,7 @@ func (o OrderRepository) GetByID(ctx context.Context, id int) (model.Order, erro
 	return order, nil
 }
 
-func (o OrderRepository) GetAll(ctx context.Context) ([]model.Order, error) {
+func (o Repository) GetAll(ctx context.Context) ([]model.Order, error) {
 	var (
 		orders []model.Order
 		err    error
@@ -86,7 +80,7 @@ func (o OrderRepository) GetAll(ctx context.Context) ([]model.Order, error) {
 
 }
 
-func (o OrderRepository) onConflict() *gorm.DB {
+func (o Repository) onOrderConflict() *gorm.DB {
 	return o.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "order_num"}},
 		DoNothing: true,

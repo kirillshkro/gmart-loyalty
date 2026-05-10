@@ -5,28 +5,18 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
-	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
 	"github.com/kirillshkro/gmart-loyalty/pkg/utils"
 	"gorm.io/gorm"
 )
-
-type OrderService struct {
-	Repo repository.IOrderRepository
-}
 
 type IOrderService interface {
 	SetOrderUser(w http.ResponseWriter, r *http.Request)
 	OrdersByUser(w http.ResponseWriter, r *http.Request)
 }
 
-func NewOrderService(cfg *config.AppConfig) *OrderService {
-	return &OrderService{}
-}
-
-func (o *OrderService) SetOrderUser(w http.ResponseWriter, r *http.Request) {
+func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	//Извлечь модель из запроса
 	var order model.Order
 	//Получить данные пользователя из контекста
@@ -45,7 +35,7 @@ func (o *OrderService) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	order.UserID = userID
 	//Сохранить заказ в базе данных
 	//Если пользователь дублировал заказ, вернуть
-	if err = o.Repo.Create(order); err != nil {
+	if err = o.Repo.CreateOrder(&order); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			http.Error(w, err.Error(), http.StatusOK)
 			return

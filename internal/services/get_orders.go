@@ -6,7 +6,7 @@ import (
 )
 
 // Реализация метода для получения заказов пользователя
-func (o OrderService) OrdersByUser(w http.ResponseWriter, r *http.Request) {
+func (o Service) OrdersByUser(w http.ResponseWriter, r *http.Request) {
 	// Получение контекста запроса
 	ctx := r.Context()
 	orders, err := o.Repo.GetAll(ctx)

@@ -15,7 +15,7 @@ type Registerer interface {
 }
 
 // Регистрирует нового пользователя в системе
-func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
+func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 	var (
 		regUser model.User
 		profile model.UserProfile
@@ -51,7 +51,7 @@ func (u UserService) Register(w http.ResponseWriter, r *http.Request) {
 		User: regUser,
 	}
 
-	if err = u.Repo.Create(profile); err != nil {
+	if err = s.Repo.CreateUser(profile); err != nil {
 		if _, ok = errors.AsType[*types.ErrDuplicateUser](err); ok {
 			w.WriteHeader(http.StatusConflict)
 			return

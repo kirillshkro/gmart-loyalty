@@ -11,21 +11,23 @@ import (
 )
 
 type IUserRepository interface {
-	Create(profile model.UserProfile) error
-	GetByID(id int) (model.UserProfile, error)
-	GetByName(username string) (model.UserProfile, error)
+	CreateUser(profile model.UserProfile) error
+	UserByID(id int) (model.UserProfile, error)
+	UserByName(username string) (model.UserProfile, error)
 }
 
 type UserRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) IUserRepository {
-	return &UserRepository{
-		db: db,
+/*
+	func NewUserRepository(db *gorm.DB) IUserRepository {
+		return &UserRepository{
+			db: db,
+		}
 	}
-}
-func (u *UserRepository) Create(userProfile model.UserProfile) error {
+*/
+func (u *Repository) CreateUser(userProfile model.UserProfile) error {
 	th := u.onConflict()
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
@@ -38,7 +40,7 @@ func (u *UserRepository) Create(userProfile model.UserProfile) error {
 	return nil
 }
 
-func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
+func (u Repository) UserByID(id int) (model.UserProfile, error) {
 	var (
 		up  model.UserProfile
 		err error
@@ -50,7 +52,7 @@ func (u UserRepository) GetByID(id int) (model.UserProfile, error) {
 	return up, nil
 }
 
-func (u UserRepository) GetByName(userName string) (model.UserProfile, error) {
+func (u Repository) UserByName(userName string) (model.UserProfile, error) {
 	var (
 		up  model.UserProfile
 		err error
@@ -61,7 +63,7 @@ func (u UserRepository) GetByName(userName string) (model.UserProfile, error) {
 	return up, nil
 }
 
-func (u UserRepository) onConflict() *gorm.DB {
+func (u Repository) onConflict() *gorm.DB {
 	return u.db.Clauses(
 		clause.OnConflict{
 			Columns:   []clause.Column{{Name: "user_name"}},

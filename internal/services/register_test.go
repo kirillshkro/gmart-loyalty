@@ -20,10 +20,11 @@ import (
 
 type TestUserSuite struct {
 	suite.Suite
-	service *UserService
+	service *Service
 }
 
 func (s *TestUserSuite) SetupTest() {
+	var err error
 	l := logger.NewSlogLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil)), logger.Config{
 		Colorful:             true,
 		ParameterizedQueries: false,
@@ -35,12 +36,12 @@ func (s *TestUserSuite) SetupTest() {
 		TranslateError: true,
 		Logger:         l,
 	}
-	s.service = NewUserService()
+	s.service = NewService()
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &opts)
 	if err != nil {
 		s.T().Error(err)
 	}
-	s.service.Repo = repository.NewUserRepository(db)
+	s.service.Repo = repository.NewRepository(db)
 	if err = db.AutoMigrate(&model.UserProfile{}); err != nil {
 		s.T().Error(err)
 	}

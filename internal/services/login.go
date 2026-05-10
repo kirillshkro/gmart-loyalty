@@ -18,7 +18,7 @@ type Loginer interface {
 	Login(w http.ResponseWriter, r *http.Request)
 }
 
-func (u UserService) Login(w http.ResponseWriter, r *http.Request) {
+func (u Service) Login(w http.ResponseWriter, r *http.Request) {
 	//Получить пользователя из запроса
 	var (
 		user model.User
@@ -39,7 +39,7 @@ func (u UserService) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Получить пользователя из базы данных
-	if _, err = u.Repo.GetByName(user.UserName); err != nil {
+	if _, err = u.Repo.UserByName(user.UserName); err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
@@ -54,13 +54,13 @@ func (u UserService) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (u UserService) validateUser(user model.User) (bool, error) {
+func (u Service) validateUser(user model.User) (bool, error) {
 	//Проверка логина и пароля
 	if user.UserName == "" || user.Password == "" {
 		return false, &types.ErrInvalidLogin{}
 	}
 	//Проверка сущетвования пользователя в базе данных
-	profile, err := u.Repo.GetByName(user.UserName)
+	profile, err := u.Repo.UserByName(user.UserName)
 	if err != nil {
 		return false, err
 	}

@@ -14,14 +14,14 @@ import (
 
 //Middleware, осуществляющее авторизацию пользователя.
 
-func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
+func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// Реализация логики проверки
 		//Извлекаем токен из заголовка или куки
 		userCookie, err := r.Cookie("auth_cookie")
 		if err != nil {
 			if errors.Is(err, http.ErrNoCookie) {
-				userCookie, err = u.createCookie()
+				userCookie, err = s.createCookie()
 				if err != nil {
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
 					return
@@ -62,7 +62,7 @@ func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		//Проверяем валидность токена
-		if !u.validateToken(userCookie.Value) {
+		if !s.validateToken(userCookie.Value) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -72,14 +72,14 @@ func (u *UserService) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 // Реализация логики проверки JWT токена
-func (u UserService) validateToken(token string) bool {
+func (s Service) validateToken(token string) bool {
 	// Проверка на пустоту токена
 	if token == "" {
 		return false
 	}
 	// Проверка валидности токена
 	claims, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		return []byte(u.authCfg.SecretKey), nil
+		return []byte(s.authCfg.SecretKey), nil
 	})
 
 	if err != nil || !claims.Valid {
@@ -89,7 +89,7 @@ func (u UserService) validateToken(token string) bool {
 	return true
 }
 
-func (u UserService) createCookie() (*http.Cookie, error) {
+func (s Service) createCookie() (*http.Cookie, error) {
 	authUser := claims.NewUserClaims()
 	tk, err := authUser.Token()
 	if err != nil {
