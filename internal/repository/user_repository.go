@@ -20,13 +20,6 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
-/*
-	func NewUserRepository(db *gorm.DB) IUserRepository {
-		return &UserRepository{
-			db: db,
-		}
-	}
-*/
 func (u *Repository) CreateUser(userProfile model.UserProfile) error {
 	th := u.onConflict()
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
