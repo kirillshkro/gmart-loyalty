@@ -11,10 +11,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type OrderRepository struct {
-	db *gorm.DB
-}
-
 type IOrderRepository interface {
 	Setter
 	Getter
