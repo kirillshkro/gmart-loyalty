@@ -2,14 +2,19 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/model/claims"
+	"github.com/kirillshkro/gmart-loyalty/internal/types"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //Middleware, осуществляющее авторизацию пользователя.
@@ -18,28 +23,24 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// Реализация логики проверки
 		//Извлекаем токен из заголовка или куки
-		userCookie, err := r.Cookie("auth_cookie")
-		if err != nil {
-			if errors.Is(err, http.ErrNoCookie) {
-				userCookie, err = s.createCookie()
-				if err != nil {
-					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+			var (
+				user model.User
+				same bool
+			)
+
+			if err = json.NewDecoder(r.Body).Decode(&user); err != nil {
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+
+			//Проверка логина и пароля
+			if ok, err := s.validateUser(user); !ok {
+				if _, same = errors.AsType[*types.ErrInvalidLogin](err); same {
+					http.Error(w, "Bad request: empty login or password", http.StatusBadRequest)
 					return
 				}
-				http.SetCookie(w, userCookie)
-				//Выдадим UserID из куки
-				tk := userCookie.Value
-				authClaims := claims.NewUserClaims()
-				userID, err := authClaims.UserIDByToken(tk)
-				if err != nil {
-					log.Print(err)
-					http.Error(w, "Invalid token", http.StatusInternalServerError)
-					next.ServeHTTP(w, r)
-					return
-				}
-				c := context.WithValue(r.Context(), UserID, userID)
-				r = r.WithContext(c)
-				next.ServeHTTP(w, r)
+				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 				return
 			}
 			//Выдадим UserID из куки
@@ -89,17 +90,53 @@ func (s Service) validateToken(token string) bool {
 	return true
 }
 
-func (s Service) createCookie() (*http.Cookie, error) {
+func (s Service) createCookie(userID int) (*http.Cookie, error) {
 	authUser := claims.NewUserClaims()
+	authUser.UserID = userID
 	tk, err := authUser.Token()
 	if err != nil {
 		return nil, fmt.Errorf("error creating token: %w", err)
 	}
-	return &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "auth_cookie",
 		Value:    tk,
+		Path:     "/",
 		Expires:  time.Now().Add(24 * 7 * time.Hour),
 		HttpOnly: true,
 		Secure:   false,
-	}, nil
+	}
+	return cookie, nil
+}
+
+func (s Service) cookieExist(req *http.Request, cookieName string) bool {
+	newReq := io.NopCloser(req.Body)
+	_, err := req.Cookie(cookieName)
+	if err != nil {
+		return false
+	}
+	req.Body = newReq
+	return true
+}
+
+func (s Service) refreshCookie(ctx context.Context) (*http.Cookie, error) {
+	userID := ctx.Value(UserID).(int)
+	return s.createCookie(userID)
+}
+
+func (s Service) validateUser(user model.User) (bool, error) {
+	//Проверка логина и пароля
+	if user.UserName == "" || user.Password == "" {
+		return false, &types.ErrInvalidLogin{}
+	}
+	//Проверка сущетвования пользователя в базе данных
+	profile, err := s.Repo.UserByName(user.UserName)
+	if err != nil {
+		return false, err
+	}
+	//Проверка пароля с помощью bcrypt
+	err = bcrypt.CompareHashAndPassword([]byte(profile.Password), []byte(user.Password))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

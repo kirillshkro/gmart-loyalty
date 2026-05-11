@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
@@ -23,6 +24,7 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		ok      bool
 		err     error
 	)
+	newReq := io.NopCloser(r.Body)
 	if err = json.NewDecoder(r.Body).Decode(&regUser); err != nil {
 		http.Error(w, "Invalid request", http.StatusInternalServerError)
 		return
@@ -67,6 +69,7 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error creating cookie", http.StatusInternalServerError)
 		return
 	}
+	r.Body = newReq
 	ctx := context.WithValue(r.Context(), UserID, userID)
 	r.AddCookie(user_cookie)
 	authMiddleware := s.AuthMiddleware(http.HandlerFunc(s.Login)).(http.HandlerFunc)

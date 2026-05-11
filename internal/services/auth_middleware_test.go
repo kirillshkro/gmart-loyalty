@@ -11,9 +11,6 @@ import (
 
 // Тест AuthMiddleware для проверки авторизации пользователя.
 func (s *TestUserSuite) Test_AuthMiddleware() {
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
 
 	// Создаем токен для теста
 	user := model.User{
@@ -28,7 +25,7 @@ func (s *TestUserSuite) Test_AuthMiddleware() {
 		s.T().Error(err)
 	}
 
-	wrapped := s.service.AuthMiddleware(http.HandlerFunc(testHandler)).(http.HandlerFunc)
+	wrapped := s.service.AuthMiddleware(http.HandlerFunc(s.service.Login)).(http.HandlerFunc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user/login", &body)
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
