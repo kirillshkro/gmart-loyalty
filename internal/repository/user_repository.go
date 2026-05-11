@@ -11,7 +11,7 @@ import (
 )
 
 type IUserRepository interface {
-	CreateUser(profile model.UserProfile) error
+	CreateUser(profile model.UserProfile) (int, error)
 	UserByID(id int) (model.UserProfile, error)
 	UserByName(username string) (model.UserProfile, error)
 }
@@ -20,17 +20,17 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
-func (u *Repository) CreateUser(userProfile model.UserProfile) error {
+func (u *Repository) CreateUser(userProfile model.UserProfile) (int, error) {
 	th := u.onConflict()
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return &types.ErrDuplicateUser{
+			return 0, &types.ErrDuplicateUser{
 				UserName: userProfile.UserName,
 			}
 		}
-		return err
+		return 0, err
 	}
-	return nil
+	return userProfile.ID, nil
 }
 
 func (u Repository) UserByID(id int) (model.UserProfile, error) {
