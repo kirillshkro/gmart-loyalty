@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -45,13 +46,14 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	regUser.Password = string(cryptPass)
 	regUser.Password2 = regUser.Password
+
 	//Создаем профиль пользователя
 
 	profile = model.UserProfile{
 		User: regUser,
 	}
-
-	if err = s.Repo.CreateUser(profile); err != nil {
+	var userID int
+	if userID, err = s.Repo.CreateUser(profile); err != nil {
 		if _, ok = errors.AsType[*types.ErrDuplicateUser](err); ok {
 			w.WriteHeader(http.StatusConflict)
 			return
@@ -59,5 +61,14 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	user_cookie, err := s.createCookie(userID)
+	if err != nil {
+		http.Error(w, "Error creating cookie", http.StatusInternalServerError)
+		return
+	}
+	ctx := context.WithValue(r.Context(), UserID, userID)
+	r.AddCookie(user_cookie)
+	authMiddleware := s.AuthMiddleware(http.HandlerFunc(s.Login)).(http.HandlerFunc)
+	authMiddleware(w, r.WithContext(ctx))
 }

@@ -52,7 +52,7 @@ func (s *TestUserSuite) TearDownSuite() {
 }
 
 // Тест регистрации пользователя
-func (s *TestUserSuite) Test_RegisterUserEmptyPassword() {
+func (s *TestUserSuite) Test_RegisterUser() {
 	testCases := []struct {
 		name         string
 		username     string
@@ -117,12 +117,13 @@ func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	req1 := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody1))
 	w := httptest.NewRecorder()
 	s.service.Register(w, req1)
-	s.Equal(http.StatusOK, w.Code)
-	reqBody2, _ := json.Marshal(user2)
-	req2 := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody2))
-	w = httptest.NewRecorder()
-	s.service.Register(w, req2)
-	s.Equal(http.StatusConflict, w.Code)
+	if s.Assert().Equal(http.StatusOK, w.Code) {
+		reqBody2, _ := json.Marshal(user2)
+		req2 := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody2))
+		w = httptest.NewRecorder()
+		s.service.Register(w, req2)
+		s.Assert().Equal(http.StatusConflict, w.Code)
+	}
 }
 
 func (s *TestUserSuite) Test_PasswordsNotEquals() {
