@@ -3,10 +3,8 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -17,63 +15,44 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const authCookie = "auth_cookie"
+
 //Middleware, осуществляющее авторизацию пользователя.
 
 func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		// Реализация логики проверки
-		//Извлекаем токен из заголовка или куки
-
-			var (
-				user model.User
-				same bool
-			)
-
-			if err = json.NewDecoder(r.Body).Decode(&user); err != nil {
-				http.Error(w, "Bad request", http.StatusBadRequest)
-				return
-			}
-
-			//Проверка логина и пароля
-			if ok, err := s.validateUser(user); !ok {
-				if _, same = errors.AsType[*types.ErrInvalidLogin](err); same {
-					http.Error(w, "Bad request: empty login or password", http.StatusBadRequest)
-					return
-				}
-				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-				return
-			}
-			//Выдадим UserID из куки
-			tk := userCookie.Value
-			if tk != "" {
-				http.Error(w, "Invalid token", http.StatusInternalServerError)
-				next.ServeHTTP(w, r)
-				return
-			}
-			authClaims := claims.NewUserClaims()
-			userID, err := authClaims.UserIDByToken(tk)
+		//Проверка существования куки
+		if !s.cookieExist(r, authCookie) {
+			newCookie, err := s.refreshCookie(r.Context())
 			if err != nil {
-				http.Error(w, "Invalid token", http.StatusInternalServerError)
+				w.WriteHeader(http.StatusInternalServerError)
 				next.ServeHTTP(w, r)
 				return
 			}
-			c := context.WithValue(r.Context(), UserID, userID)
-			r = r.WithContext(c)
+			http.SetCookie(w, newCookie)
+		}
+		var user model.User
+		newReq := io.NopCloser(r.Body)
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			next.ServeHTTP(w, r)
 			return
 		}
-		//Проверяем валидность токена
-		if !s.validateToken(userCookie.Value) {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		//Проверить валидность логин/пароля
+		if ok, err := s.validateUser(user); !ok {
+			s.logger.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
 			return
 		}
+		r.Body = newReq
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
 }
 
 // Реализация логики проверки JWT токена
-func (s Service) validateToken(token string) bool {
+func (s Service) validToken(token string) bool {
 	// Проверка на пустоту токена
 	if token == "" {
 		return false
