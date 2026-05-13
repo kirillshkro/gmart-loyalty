@@ -44,7 +44,7 @@ func LoggerHandler(next http.Handler) http.Handler {
 		method := r.Method
 		uri := r.RequestURI
 		startTime := time.Now()
-		logger.Info(fmt.Sprint("Method: %s, uri: %s\n", method, uri))
+		logger.Info(fmt.Sprintf("Method: %s, uri: %s\n", method, uri))
 		next.ServeHTTP(writer, r)
 		duration := time.Since(startTime)
 		logger.Info(fmt.Sprintf("Time: %d ms, req size: %d, req status: %d\n", duration.Milliseconds(), writer.size, writer.status))
