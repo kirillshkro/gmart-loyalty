@@ -45,9 +45,15 @@ func (s *TestUserSuite) Test_Login() {
 	var testUserBody bytes.Buffer
 	err := json.NewEncoder(&testUserBody).Encode(testUser)
 	s.Require().NoError(err)
+
+	//Передать куки
+
 	reqTestUser := httptest.NewRequest(http.MethodPost, "/api/user/register", &testUserBody)
 	rr := httptest.NewRecorder()
 	s.service.Register(rr, reqTestUser)
+	resp := rr.Result()
+	defer resp.Body.Close()
+	tcookie := resp.Cookies()
 	authMiddleware := s.service.AuthMiddleware(http.HandlerFunc(s.service.Login)).(http.HandlerFunc)
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
@@ -59,6 +65,7 @@ func (s *TestUserSuite) Test_Login() {
 			err := json.NewEncoder(&testUserBody).Encode(user)
 			s.Require().NoError(err)
 			req := httptest.NewRequest(http.MethodPost, "/api/user/login", &testUserBody)
+			req.AddCookie(tcookie[0])
 			rr = httptest.NewRecorder()
 			authMiddleware(rr, req)
 			resp := rr.Result()

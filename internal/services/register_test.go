@@ -23,7 +23,7 @@ type TestUserSuite struct {
 	service *Service
 }
 
-func (s *TestUserSuite) SetupTest() {
+func (s *TestUserSuite) SetupSuite() {
 	var err error
 	l := logger.NewSlogLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil)), logger.Config{
 		Colorful:             true,
