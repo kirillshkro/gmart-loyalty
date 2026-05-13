@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
+	"github.com/kirillshkro/gmart-loyalty/internal/middleware"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/services"
 	"gorm.io/driver/postgres"
@@ -33,6 +34,7 @@ func setupRouter(cfg *config.AppConfig) *mux.Router {
 	r.HandleFunc("api/user/balance", service.UserBalance).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/balance/withdraw", service.SetUserWithdraw).Methods(http.MethodPost)
 	r.HandleFunc("/api/user/withdrawals", service.UserWithdrawals).Methods(http.MethodGet)
+	r.Use(middleware.LoggerHandler)
 	r.Use(service.AuthMiddleware)
 	return r
 }
