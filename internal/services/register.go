@@ -70,7 +70,6 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, user_cookie)
-	s.logger.Println("cookie installed")
 	r.Body = newReq
 	ctx := context.WithValue(r.Context(), UserID, userID)
 	r = r.WithContext(ctx)
