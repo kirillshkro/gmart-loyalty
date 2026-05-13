@@ -14,7 +14,7 @@ func (s *TestUserSuite) Test_AuthMiddleware() {
 
 	// Создаем токен для теста
 	user := model.User{
-		UserName:  "testuser2",
+		Login:     "testuser2",
 		Password:  "password123",
 		Password2: "password123",
 	}

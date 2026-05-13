@@ -36,8 +36,7 @@ func newLogWriter(resp http.ResponseWriter) *LogWriter {
 
 func LoggerHandler(next http.Handler) http.Handler {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelInfo,
-		AddSource: true,
+		Level: slog.LevelInfo,
 	}))
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		writer := newLogWriter(w)
@@ -47,7 +46,7 @@ func LoggerHandler(next http.Handler) http.Handler {
 		logger.Info(fmt.Sprintf("Method: %s, uri: %s\n", method, uri))
 		next.ServeHTTP(writer, r)
 		duration := time.Since(startTime)
-		logger.Info(fmt.Sprintf("Time: %d ms, req size: %d, req status: %d\n", duration.Milliseconds(), writer.size, writer.status))
+		logger.Info(fmt.Sprintf("Time: %d ms, req size: %d, req status: %d\n", duration, writer.size, writer.status))
 	}
 	return http.HandlerFunc(fn)
 }

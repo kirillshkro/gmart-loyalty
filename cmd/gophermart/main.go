@@ -2,15 +2,20 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/middleware"
+	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/services"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
@@ -20,7 +25,7 @@ func main() {
 }
 
 func setupRouter(cfg *config.AppConfig) *mux.Router {
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{})
+	db, err := setupDB(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,4 +42,18 @@ func setupRouter(cfg *config.AppConfig) *mux.Router {
 	r.Use(middleware.LoggerHandler)
 	r.Use(service.AuthMiddleware)
 	return r
+}
+
+func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
+	dbLog := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
+		Logger:         logger.NewSlogLogger(dbLog, logger.Config{Colorful: true, SlowThreshold: 1000 * time.Millisecond}),
+		PrepareStmt:    true,
+		TranslateError: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = db.AutoMigrate(&model.UserProfile{}, &model.Order{}, &model.UserBalance{})
+	return db, err
 }

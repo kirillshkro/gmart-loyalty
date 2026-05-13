@@ -25,7 +25,7 @@ func (u *Repository) CreateUser(userProfile model.UserProfile) (int, error) {
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return 0, &types.ErrDuplicateUser{
-				UserName: userProfile.UserName,
+				UserName: userProfile.Login,
 			}
 		}
 		return 0, err
@@ -45,12 +45,12 @@ func (u Repository) UserByID(id int) (model.UserProfile, error) {
 	return up, nil
 }
 
-func (u Repository) UserByName(userName string) (model.UserProfile, error) {
+func (u Repository) UserByName(login string) (model.UserProfile, error) {
 	var (
 		up  model.UserProfile
 		err error
 	)
-	if up, err = gorm.G[model.UserProfile](u.db).Where("user_name = ?", userName).First(context.Background()); err != nil {
+	if up, err = gorm.G[model.UserProfile](u.db).Where("login = ?", login).First(context.Background()); err != nil {
 		return model.UserProfile{}, err
 	}
 	return up, nil

@@ -55,31 +55,31 @@ func (s *TestUserSuite) TearDownSuite() {
 func (s *TestUserSuite) Test_RegisterUser() {
 	testCases := []struct {
 		name         string
-		username     string
+		login        string
 		password     string
 		expectedCode int
 	}{
 		{
 			name:         "Normal register",
-			username:     "John Doe",
+			login:        "John Doe",
 			password:     "password123",
 			expectedCode: http.StatusOK,
 		},
 		{
 			name:         "Empty Username",
-			username:     "",
+			login:        "",
 			password:     "password123",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name:         "Empty password",
-			username:     "John Doe",
+			login:        "John Doe",
 			password:     "",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name:         "Empty Username and password",
-			username:     "",
+			login:        "",
 			password:     "",
 			expectedCode: http.StatusBadRequest,
 		},
@@ -88,7 +88,7 @@ func (s *TestUserSuite) Test_RegisterUser() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
-				UserName: tc.username,
+				Login:    tc.login,
 				Password: tc.password,
 			}
 			userJSON, _ := json.Marshal(user)
@@ -103,12 +103,12 @@ func (s *TestUserSuite) Test_RegisterUser() {
 // Проверяем обработку запроса с существующим именем пользователя
 func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	user1 := model.User{
-		UserName:  "existinguser",
+		Login:     "existinguser",
 		Password:  "password",
 		Password2: "password",
 	}
 	user2 := model.User{
-		UserName:  "existinguser",
+		Login:     "existinguser",
 		Password:  "password2",
 		Password2: "password2",
 	}
@@ -117,18 +117,23 @@ func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	req1 := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody1))
 	w := httptest.NewRecorder()
 	s.service.Register(w, req1)
-	if s.Assert().Equal(http.StatusOK, w.Code) {
+	resp := w.Result()
+	defer resp.Body.Close()
+	s.Assert().Greater(len(resp.Cookies()), 0)
+	if s.Assert().Equal(http.StatusOK, resp.StatusCode) {
 		reqBody2, _ := json.Marshal(user2)
 		req2 := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody2))
 		w = httptest.NewRecorder()
 		s.service.Register(w, req2)
-		s.Assert().Equal(http.StatusConflict, w.Code)
+		resp = w.Result()
+		defer resp.Body.Close()
+		s.Assert().Equal(http.StatusConflict, resp.StatusCode)
 	}
 }
 
 func (s *TestUserSuite) Test_PasswordsNotEquals() {
 	user := model.User{
-		UserName:  "newuser",
+		Login:     "newuser",
 		Password:  "password1",
 		Password2: "password2",
 	}

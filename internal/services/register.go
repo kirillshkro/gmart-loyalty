@@ -30,7 +30,7 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if regUser.UserName == "" || regUser.Password == "" {
+	if regUser.Login == "" || regUser.Password == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -69,9 +69,12 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error creating cookie", http.StatusInternalServerError)
 		return
 	}
+	http.SetCookie(w, user_cookie)
+	s.logger.Println("cookie installed")
 	r.Body = newReq
 	ctx := context.WithValue(r.Context(), UserID, userID)
+	r = r.WithContext(ctx)
+	w.Header().Set("Content-Type", "application/json")
 	r.AddCookie(user_cookie)
-	authMiddleware := s.AuthMiddleware(http.HandlerFunc(s.Login)).(http.HandlerFunc)
-	authMiddleware(w, r.WithContext(ctx))
+	s.Login(w, r)
 }

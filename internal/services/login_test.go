@@ -12,25 +12,25 @@ import (
 func (s *TestUserSuite) Test_Login() {
 	testCases := []struct {
 		name         string
-		username     string
+		login        string
 		password     string
 		expectedCode int
 	}{
 		{
 			name:         "Match login",
-			username:     "testusermatch",
+			login:        "testusermatch",
 			password:     "password123",
 			expectedCode: http.StatusOK,
 		},
 		{
 			name:         "Mismatch login",
-			username:     "testusermismatch",
+			login:        "testusermismatch",
 			password:     "password123",
 			expectedCode: http.StatusUnauthorized,
 		},
 		{
 			name:         "Empty login username",
-			username:     "",
+			login:        "",
 			password:     "password123",
 			expectedCode: http.StatusBadRequest,
 		},
@@ -38,7 +38,7 @@ func (s *TestUserSuite) Test_Login() {
 
 	//создать юзера для теста
 	testUser := model.User{
-		UserName:  "testusermatch",
+		Login:     "testusermatch",
 		Password:  "password123",
 		Password2: "password123",
 	}
@@ -52,7 +52,7 @@ func (s *TestUserSuite) Test_Login() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
-				UserName:  tc.username,
+				Login:     tc.login,
 				Password:  tc.password,
 				Password2: tc.password,
 			}

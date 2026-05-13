@@ -104,11 +104,11 @@ func (s Service) refreshCookie(ctx context.Context) (*http.Cookie, error) {
 
 func (s Service) validateUser(user model.User) (bool, error) {
 	//Проверка логина и пароля
-	if user.UserName == "" || user.Password == "" {
+	if user.Login == "" || user.Password == "" {
 		return false, &types.ErrInvalidLogin{}
 	}
 	//Проверка сущетвования пользователя в базе данных
-	profile, err := s.Repo.UserByName(user.UserName)
+	profile, err := s.Repo.UserByName(user.Login)
 	if err != nil {
 		return false, err
 	}

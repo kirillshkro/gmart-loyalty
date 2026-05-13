@@ -1,7 +1,7 @@
 package model
 
 type User struct {
-	UserName  string `json:"user_name" gorm:"index;not null;unique"`
+	Login     string `json:"login" gorm:"index;not null;unique"`
 	Password  string `json:"password" gorm:"not null"`
 	Password2 string `json:"password2" gorm:"-:all"`
 }
