@@ -74,6 +74,5 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), UserID, userID)
 	r = r.WithContext(ctx)
 	w.Header().Set("Content-Type", "application/json")
-	r.AddCookie(user_cookie)
 	s.Login(w, r)
 }
