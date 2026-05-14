@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -17,10 +18,24 @@ type IOrderService interface {
 }
 
 func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
-	//Извлечь модель из запроса
 	var order model.Order
-	//Получить данные пользователя из контекста
-	userID := r.Context().Value(UserID).(int)
+	//Получить данные пользователя из куки
+	if !o.cookieExist(r, authCookie) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	cookie, err := r.Cookie(authCookie)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userID, err := o.userFromCookie(cookie)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	//Получить номер заказа из тела запроса
 	numOrder, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -33,6 +48,7 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	}
 	order.OrderNum = string(numOrder)
 	order.UserID = userID
+	order.CreatedAt = time.Now()
 	//Сохранить заказ в базе данных
 	//Если пользователь дублировал заказ, вернуть
 	if err = o.Repo.CreateOrder(&order); err != nil {
@@ -45,7 +61,7 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusConflict)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
