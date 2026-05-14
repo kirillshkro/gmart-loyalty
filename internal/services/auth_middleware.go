@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,13 +24,9 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		//Проверка существования куки
 		if !s.cookieExist(r, authCookie) {
-			newCookie, err := s.refreshCookie(r.Context())
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				next.ServeHTTP(w, r)
-				return
-			}
-			http.SetCookie(w, newCookie)
+			w.WriteHeader(http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
+			return
 		}
 		var user model.User
 		newReq := io.NopCloser(r.Body)
@@ -40,6 +37,11 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 		}
 		//Проверить валидность логин/пароля
 		if ok, err := s.validateUser(user); !ok {
+			if _, ok := errors.AsType[*types.ErrInvalidLogin](err); ok {
+				w.WriteHeader(http.StatusBadRequest)
+				next.ServeHTTP(w, r)
+				return
+			}
 			s.logger.Println(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			next.ServeHTTP(w, r)
