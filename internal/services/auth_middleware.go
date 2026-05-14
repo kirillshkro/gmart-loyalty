@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -78,11 +77,6 @@ func (s Service) cookieExist(req *http.Request, cookieName string) bool {
 	}
 	req.Body = newReq
 	return true
-}
-
-func (s Service) refreshCookie(ctx context.Context) (*http.Cookie, error) {
-	userID := ctx.Value(UserID).(int)
-	return s.createCookie(userID)
 }
 
 func (s Service) validateUser(user model.User) (bool, error) {
