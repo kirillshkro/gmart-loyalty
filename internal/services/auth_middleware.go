@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/model/claims"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -51,24 +50,6 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
-}
-
-// Реализация логики проверки JWT токена
-func (s Service) validToken(token string) bool {
-	// Проверка на пустоту токена
-	if token == "" {
-		return false
-	}
-	// Проверка валидности токена
-	claims, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		return []byte(s.authCfg.SecretKey), nil
-	})
-
-	if err != nil || !claims.Valid {
-		return false
-	}
-	// Если токен валиден
-	return true
 }
 
 func (s Service) createCookie(userID int) (*http.Cookie, error) {
