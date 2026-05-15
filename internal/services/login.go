@@ -6,10 +6,6 @@ import (
 	"github.com/kirillshkro/gmart-loyalty/internal/model/claims"
 )
 
-type UserIDKey string
-
-const UserID UserIDKey = "user_id"
-
 type Loginer interface {
 	Login(w http.ResponseWriter, r *http.Request)
 }
