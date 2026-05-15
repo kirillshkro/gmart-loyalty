@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -46,12 +47,17 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid format order", http.StatusUnprocessableEntity)
 		return
 	}
-	order.OrderNum = string(numOrder)
-	order.UserID = userID
-	order.CreatedAt = time.Now()
+	order = model.Order{
+		OrderNum:  string(numOrder),
+		UserID:    userID,
+		CreatedAt: time.Now(),
+	}
+
+	ctx := context.WithValue(context.TODO(), types.UserID, userID)
+	ctx = context.WithValue(ctx, types.OrderNum, string(numOrder))
 	//Сохранить заказ в базе данных
 	//Если пользователь дублировал заказ, вернуть
-	if err = o.Repo.CreateOrder(&order); err != nil {
+	if err = o.Repo.CreateOrder(ctx, &order); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			http.Error(w, err.Error(), http.StatusOK)
 			return
