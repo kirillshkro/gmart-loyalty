@@ -26,22 +26,19 @@ type Getter interface {
 
 func (o Repository) CreateOrder(ctx context.Context, order *model.Order) error {
 	th := o.onOrderConflict()
-	err := th.Transaction(func(tx *gorm.DB) error {
-		if err := gorm.G[model.Order](tx).Create(ctx, order); err != nil {
-			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				ok := o.anotherUser(ctx)
-				if ok {
-					return &types.ErrOwnAnotherUser{
-						UserID:   order.UserID,
-						OrderNum: order.OrderNum,
-					}
+	if err := gorm.G[model.Order](th).Create(ctx, order); err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			ok := o.anotherUser(ctx)
+			if ok {
+				return &types.ErrOwnAnotherUser{
+					UserID:   order.UserID,
+					OrderNum: order.OrderNum,
 				}
 			}
-			return err
 		}
-		return nil
-	})
-	return err
+		return err
+	}
+	return nil
 }
 
 func (o Repository) OrderByID(ctx context.Context, id int) (model.Order, error) {
@@ -88,12 +85,10 @@ func (o Repository) anotherUser(ctx context.Context) bool {
 	//извлечь номер заказа
 	numOrder := ctx.Value(types.OrderNum).(string)
 
-	_, err := gorm.G[model.Order](o.db).Joins(clause.JoinTarget{
+	order, _ := gorm.G[model.Order](o.db).Joins(clause.JoinTarget{
 		Table: "orders",
 		Type:  clause.InnerJoin,
-	}, nil).Where("user_id = ? AND order_num = ?", userID, numOrder).First(ctx)
-	if err != nil {
-		return false
-	}
-	return true
+	}, nil).Select("user_id").Where("order_num = ?", numOrder).First(ctx)
+
+	return userID != order.UserID
 }
