@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -17,7 +16,7 @@ type IOrderRepository interface {
 }
 
 type Setter interface {
-	CreateOrder(order *model.Order) error
+	CreateOrder(ctx context.Context, order *model.Order) error
 }
 
 type Getter interface {
@@ -25,18 +24,17 @@ type Getter interface {
 	GetAll(ctx context.Context) ([]model.Order, error)
 }
 
-func (o Repository) CreateOrder(order *model.Order) error {
+func (o Repository) CreateOrder(ctx context.Context, order *model.Order) error {
 	th := o.onOrderConflict()
 	err := th.Transaction(func(tx *gorm.DB) error {
-		if err := gorm.G[model.Order](tx).Create(context.Background(), order); err != nil {
+		if err := gorm.G[model.Order](tx).Create(ctx, order); err != nil {
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				anotherUser, err := gorm.G[model.UserProfile](tx).Select("user_id").Where("order_num=?", order.OrderNum).First(context.Background())
-				if err != nil {
-					return fmt.Errorf("user %d can't own order %s", anotherUser.ID, order.OrderNum)
-				}
-				return &types.ErrOwnAnotherUser{
-					UserID:   anotherUser.ID,
-					OrderNum: order.OrderNum,
+				ok := o.anotherUser(ctx)
+				if ok {
+					return &types.ErrOwnAnotherUser{
+						UserID:   order.UserID,
+						OrderNum: order.OrderNum,
+					}
 				}
 			}
 			return err
@@ -82,4 +80,20 @@ func (o Repository) onOrderConflict() *gorm.DB {
 		DoNothing: true,
 	},
 		clause.Returning{Columns: []clause.Column{{Name: "id"}}})
+}
+
+func (o Repository) anotherUser(ctx context.Context) bool {
+	//извлечь user_id
+	userID := ctx.Value(types.UserID).(int)
+	//извлечь номер заказа
+	numOrder := ctx.Value(types.OrderNum).(string)
+
+	_, err := gorm.G[model.Order](o.db).Joins(clause.JoinTarget{
+		Table: "orders",
+		Type:  clause.InnerJoin,
+	}, nil).Where("user_id = ? AND order_num = ?", userID, numOrder).First(ctx)
+	if err != nil {
+		return false
+	}
+	return true
 }
