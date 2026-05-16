@@ -115,6 +115,60 @@ func (s *TestOrderSuite) Test_UnautorizedUser() {
 	s.Assert().Equal(http.StatusUnauthorized, rr.Code)
 }
 
+func (s *TestOrderSuite) Test_AnotherUser() {
+	user1 := model.User{
+		Login:     "other",
+		Password:  "dirtyharry",
+		Password2: "dirtyharry",
+	}
+	var reqBody1 bytes.Buffer
+
+	if err := json.NewEncoder(&reqBody1).Encode(user1); err != nil {
+		s.T().Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody1)
+	rr := httptest.NewRecorder()
+	s.service.Register(rr, req)
+	resp := rr.Result()
+	defer reqBody1.Reset()
+
+	user1Cookie := resp.Cookies()[0]
+
+	user2 := model.User{
+		Login:     "unauthorized",
+		Password:  "dirtyharry",
+		Password2: "dirtyharry",
+	}
+	var reqBody2 bytes.Buffer
+
+	if err := json.NewEncoder(&reqBody2).Encode(user2); err != nil {
+		s.T().Fatal(err)
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody2)
+	rr = httptest.NewRecorder()
+	s.service.Register(rr, req)
+
+	resp = rr.Result()
+
+	user2Cookie := resp.Cookies()[0]
+
+	numOrder := utils.GenNumberOrder(8)
+
+	reqOrder1 := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(numOrder))
+	reqOrder1.AddCookie(user1Cookie)
+	rr = httptest.NewRecorder()
+	s.service.SetOrderUser(rr, reqOrder1)
+	if s.Assert().Equal(http.StatusAccepted, rr.Code) {
+		reqOrder2 := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(numOrder))
+		reqOrder2.AddCookie(user2Cookie)
+		rr = httptest.NewRecorder()
+		s.service.SetOrderUser(rr, reqOrder2)
+		s.Assert().Equal(http.StatusConflict, rr.Code)
+	}
+}
+
 func TestOrder(t *testing.T) {
 	suite.Run(t, new(TestOrderSuite))
 }
