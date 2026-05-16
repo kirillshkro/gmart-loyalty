@@ -89,6 +89,32 @@ func (s *TestOrderSuite) Test_NormalSetOrder() {
 	}
 }
 
+// Тест если пользователь неавторизован
+func (s *TestOrderSuite) Test_UnautorizedUser() {
+	user := model.User{
+		Login:     "unauthorized",
+		Password:  "dirtyharry",
+		Password2: "dirtyharry",
+	}
+	var reqBody bytes.Buffer
+
+	if err := json.NewEncoder(&reqBody).Encode(user); err != nil {
+		s.T().Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody)
+	rr := httptest.NewRecorder()
+	s.service.Register(rr, req)
+
+	//Не сохраняем куки
+	orderNum := utils.GenNumberOrder(8)
+	reqOrder := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(orderNum))
+	rr = httptest.NewRecorder()
+	s.service.SetOrderUser(rr, reqOrder)
+
+	s.Assert().Equal(http.StatusUnauthorized, rr.Code)
+}
+
 func TestOrder(t *testing.T) {
 	suite.Run(t, new(TestOrderSuite))
 }
