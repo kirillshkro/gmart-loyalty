@@ -85,10 +85,7 @@ func (o Repository) anotherUser(ctx context.Context) bool {
 	//извлечь номер заказа
 	numOrder := ctx.Value(types.OrderNum).(string)
 
-	order, _ := gorm.G[model.Order](o.db).Joins(clause.JoinTarget{
-		Table: "orders",
-		Type:  clause.InnerJoin,
-	}, nil).Select("user_id").Where("order_num = ?", numOrder).First(ctx)
+	order, _ := gorm.G[model.Order](o.db).Select("user_id").Where("order_num = ?", numOrder).First(ctx)
 
 	return userID != order.UserID
 }
