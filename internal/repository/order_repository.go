@@ -26,19 +26,22 @@ type Getter interface {
 
 func (o Repository) CreateOrder(ctx context.Context, order *model.Order) error {
 	th := o.onOrderConflict()
-	if err := gorm.G[model.Order](th).Create(ctx, order); err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			ok := o.anotherUser(ctx)
-			if ok {
-				return &types.ErrOwnAnotherUser{
-					UserID:   order.UserID,
-					OrderNum: order.OrderNum,
+	err := o.db.Transaction(func(tx *gorm.DB) error {
+		if err := gorm.G[model.Order](th).Create(ctx, order); err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				ok := o.anotherUser(ctx)
+				if ok {
+					return &types.ErrOwnAnotherUser{
+						UserID:   order.UserID,
+						OrderNum: order.OrderNum,
+					}
 				}
 			}
+			return err
 		}
-		return err
-	}
-	return nil
+		return nil
+	})
+	return err
 }
 
 func (o Repository) OrderByID(ctx context.Context, id int) (model.Order, error) {
