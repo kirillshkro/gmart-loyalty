@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -48,9 +47,8 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	order = model.Order{
-		OrderNum:  string(numOrder),
-		UserID:    userID,
-		CreatedAt: time.Now(),
+		Number: string(numOrder),
+		UserID: userID,
 	}
 
 	ctx := context.WithValue(context.TODO(), types.UserID, userID)
