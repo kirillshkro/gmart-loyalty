@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -50,15 +51,16 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	}()
 	select {
 	case err := <-errCh:
-		if err != nil {
-			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				w.WriteHeader(http.StatusOK)
-			}
-			if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
-				w.WriteHeader(http.StatusConflict)
-			}
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			w.WriteHeader(http.StatusOK)
+			return
 		}
-	default:
+		if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+	case <-time.After(5 * time.Second):
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
