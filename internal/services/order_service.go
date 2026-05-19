@@ -17,8 +17,9 @@ type IOrderService interface {
 	OrdersByUser(w http.ResponseWriter, r *http.Request)
 }
 
+const MAX_ORDERS_PER_USER = 100
+
 func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
-	var order model.Order
 	//Получить данные пользователя из куки
 	if !o.cookieExist(r, authCookie) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -42,31 +43,47 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if !utils.Valid(string(numOrder)) {
-		http.Error(w, "Invalid format order", http.StatusUnprocessableEntity)
-		return
+	errCh := make(chan error, MAX_ORDERS_PER_USER)
+	go func() {
+		err = o.processingOrder(userID, string(numOrder), errCh)
+		close(errCh)
+	}()
+	select {
+	case err := <-errCh:
+		if err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				w.WriteHeader(http.StatusOK)
+			}
+			if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
+				w.WriteHeader(http.StatusConflict)
+			}
+		}
+	default:
 	}
-	order = model.Order{
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- error) error {
+	//Проверить статус заказа
+	order := model.Order{
 		Number: string(numOrder),
 		UserID: userID,
+		Status: model.StatusNew,
+	}
+	//Проверить формат номера заказ
+	if !utils.Valid(string(numOrder)) {
+		errCh <- errors.New("Invalid format order")
+		order.Status = model.StutusInvalid
+		return nil
 	}
 
 	ctx := context.WithValue(context.TODO(), types.UserID, userID)
 	ctx = context.WithValue(ctx, types.OrderNum, string(numOrder))
 	//Сохранить заказ в базе данных
 	//Если пользователь дублировал заказ, вернуть
-	if err = o.Repo.CreateOrder(ctx, &order); err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			http.Error(w, err.Error(), http.StatusOK)
-			return
-		}
-		//Проверить, что нет других пользователей с таким номером заказа
-		if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
-			http.Error(w, err.Error(), http.StatusConflict)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		return
+	if err := o.Repo.CreateOrder(ctx, &order); err != nil {
+		errCh <- err
+		return nil
 	}
-	w.WriteHeader(http.StatusAccepted)
+	return nil
 }
