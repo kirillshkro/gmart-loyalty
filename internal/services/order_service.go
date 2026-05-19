@@ -59,6 +59,10 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
+		if _, ok := errors.AsType[*types.ErrInvalidFormatOrder](err); ok {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
 	case <-time.After(5 * time.Second):
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -74,7 +78,7 @@ func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- erro
 	}
 	//Проверить формат номера заказ
 	if !utils.Valid(string(numOrder)) {
-		errCh <- errors.New("Invalid format order")
+		errCh <- &types.ErrInvalidFormatOrder{Number: string(numOrder)}
 		order.Status = model.StutusInvalid
 		return nil
 	}
