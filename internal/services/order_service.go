@@ -70,7 +70,6 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- error) error {
-	//Проверить статус заказа
 	order := model.Order{
 		Number: string(numOrder),
 		UserID: userID,
@@ -86,7 +85,6 @@ func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- erro
 	ctx := context.WithValue(context.TODO(), types.UserID, userID)
 	ctx = context.WithValue(ctx, types.OrderNum, string(numOrder))
 	//Сохранить заказ в базе данных
-	//Если пользователь дублировал заказ, вернуть
 	if err := o.Repo.CreateOrder(ctx, &order); err != nil {
 		errCh <- err
 		return nil
