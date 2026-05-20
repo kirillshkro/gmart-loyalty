@@ -34,6 +34,11 @@ type IBalanceService interface {
 }
 
 func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
+	if !s.cookieExist(r, authCookie) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
