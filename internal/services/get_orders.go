@@ -7,6 +7,11 @@ import (
 
 // Реализация метода для получения заказов пользователя
 func (o Service) OrdersByUser(w http.ResponseWriter, r *http.Request) {
+	//Проверка авторицации пользователя
+	if !o.cookieExist(r, authCookie) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	// Получение контекста запроса
 	ctx := r.Context()
 	orders, err := o.Repo.GetAll(ctx)
@@ -15,7 +20,7 @@ func (o Service) OrdersByUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(orders) == 0 {
-		http.Error(w, "Orders not found", http.StatusNotFound)
+		http.Error(w, "Orders not found", http.StatusNoContent)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

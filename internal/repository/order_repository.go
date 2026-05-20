@@ -39,6 +39,14 @@ func (o Repository) CreateOrder(ctx context.Context, order *model.Order) error {
 			}
 			return err
 		}
+		order.Status = model.StatusProcessed
+		rows, err := gorm.G[model.Order](tx).Where("id = ? AND user_id = ?", order.ID, order.UserID).Update(ctx, "status", order.Status)
+		if err != nil {
+			return err
+		}
+		if rows == 0 {
+			return err
+		}
 		return nil
 	})
 	return err
@@ -61,7 +69,7 @@ func (o Repository) GetAll(ctx context.Context) ([]model.Order, error) {
 		orders []model.Order
 		err    error
 	)
-	userID := ctx.Value("user_id").(int)
+	userID := ctx.Value(types.UserID).(int)
 	if orders, err = gorm.G[model.Order](o.db).Order(
 		clause.OrderByColumn{
 			Desc:   false,

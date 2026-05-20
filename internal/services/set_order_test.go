@@ -22,6 +22,8 @@ import (
 type TestOrderSuite struct {
 	suite.Suite
 	service *Service
+	uCookie *http.Cookie
+	resp    *http.Response
 }
 
 func (s *TestOrderSuite) SetupSuite() {
@@ -49,14 +51,7 @@ func (s *TestOrderSuite) SetupSuite() {
 		s.T().Error(err)
 		return
 	}
-}
 
-func (s *TestOrderSuite) TearDownSuite() {
-}
-
-// Тест для проверки корректности работы метода SetOrder,
-// Юзер существует в базе данных, другие юзеры не создавали заказ с этим же номером заказа.
-func (s *TestOrderSuite) Test_NormalSetOrder() {
 	user := model.User{
 		Login:     "testuser",
 		Password:  "testpass",
@@ -69,21 +64,28 @@ func (s *TestOrderSuite) Test_NormalSetOrder() {
 	rr := httptest.NewRecorder()
 	regReq := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody)
 	s.service.Register(rr, regReq)
-	resp := rr.Result()
-	defer resp.Body.Close()
-	userCookie := resp.Cookies()[0]
+	s.resp = rr.Result()
+	s.uCookie = s.resp.Cookies()[0]
+}
 
+func (s *TestOrderSuite) TearDownSuite() {
+	s.resp.Body.Close()
+}
+
+// Тест для проверки корректности работы метода SetOrder,
+// Юзер существует в базе данных, другие юзеры не создавали заказ с этим же номером заказа.
+func (s *TestOrderSuite) Test_NormalSetOrder() {
 	firstOrder := utils.GenNumberOrder(8)
 	secondOrder := firstOrder
 
 	reqFirstOrder := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(firstOrder))
-	rr = httptest.NewRecorder()
-	reqFirstOrder.AddCookie(userCookie)
+	rr := httptest.NewRecorder()
+	reqFirstOrder.AddCookie(s.uCookie)
 	s.service.SetOrderUser(rr, reqFirstOrder)
 	if s.Assert().Equal(http.StatusAccepted, rr.Code) {
 		reqSecOrder := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(secondOrder))
 		rr = httptest.NewRecorder()
-		reqSecOrder.AddCookie(userCookie)
+		reqSecOrder.AddCookie(s.uCookie)
 		s.service.SetOrderUser(rr, reqSecOrder)
 		s.Assert().Equal(http.StatusOK, rr.Code)
 	}
@@ -91,50 +93,16 @@ func (s *TestOrderSuite) Test_NormalSetOrder() {
 
 // Тест если пользователь неавторизован
 func (s *TestOrderSuite) Test_UnautorizedUser() {
-	user := model.User{
-		Login:     "unauthorized",
-		Password:  "dirtyharry",
-		Password2: "dirtyharry",
-	}
-	var reqBody bytes.Buffer
-
-	if err := json.NewEncoder(&reqBody).Encode(user); err != nil {
-		s.T().Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody)
-	rr := httptest.NewRecorder()
-	s.service.Register(rr, req)
-
 	//Не сохраняем куки
 	orderNum := utils.GenNumberOrder(8)
 	reqOrder := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(orderNum))
-	rr = httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 	s.service.SetOrderUser(rr, reqOrder)
 
 	s.Assert().Equal(http.StatusUnauthorized, rr.Code)
 }
 
 func (s *TestOrderSuite) Test_AnotherUser() {
-	user1 := model.User{
-		Login:     "other",
-		Password:  "dirtyharry",
-		Password2: "dirtyharry",
-	}
-	var reqBody1 bytes.Buffer
-
-	if err := json.NewEncoder(&reqBody1).Encode(user1); err != nil {
-		s.T().Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody1)
-	rr := httptest.NewRecorder()
-	s.service.Register(rr, req)
-	resp := rr.Result()
-	defer resp.Body.Close()
-
-	user1Cookie := resp.Cookies()[0]
-
 	user2 := model.User{
 		Login:     "another",
 		Password:  "dirtyharry",
@@ -146,18 +114,18 @@ func (s *TestOrderSuite) Test_AnotherUser() {
 		s.T().Fatal(err)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody2)
-	rr = httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody2)
+	rr := httptest.NewRecorder()
 	s.service.Register(rr, req)
 
-	resp = rr.Result()
+	s.resp = rr.Result()
 
-	user2Cookie := resp.Cookies()[0]
+	user2Cookie := s.resp.Cookies()[0]
 
 	numOrder := utils.GenNumberOrder(8)
 
 	reqOrder1 := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(numOrder))
-	reqOrder1.AddCookie(user1Cookie)
+	reqOrder1.AddCookie(s.uCookie)
 	rr = httptest.NewRecorder()
 	s.service.SetOrderUser(rr, reqOrder1)
 	if s.Assert().Equal(http.StatusAccepted, rr.Code) {
@@ -170,29 +138,11 @@ func (s *TestOrderSuite) Test_AnotherUser() {
 }
 
 func (s *TestOrderSuite) Test_InvalidNumOrder() {
-	user1 := model.User{
-		Login:     "invalid",
-		Password:  "dirtyharry",
-		Password2: "dirtyharry",
-	}
-	var reqBody1 bytes.Buffer
-
-	if err := json.NewEncoder(&reqBody1).Encode(user1); err != nil {
-		s.T().Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/user/register", &reqBody1)
-	rr := httptest.NewRecorder()
-	s.service.Register(rr, req)
-	resp := rr.Result()
-	defer resp.Body.Close()
-
-	user1Cookie := resp.Cookies()[0]
 	numOrder := "10000111"
 
 	reqOrder1 := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(numOrder))
-	reqOrder1.AddCookie(user1Cookie)
-	rr = httptest.NewRecorder()
+	reqOrder1.AddCookie(s.uCookie)
+	rr := httptest.NewRecorder()
 	s.service.SetOrderUser(rr, reqOrder1)
 	s.Assert().Equal(http.StatusUnprocessableEntity, rr.Code)
 }
