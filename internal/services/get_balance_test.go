@@ -85,7 +85,13 @@ func (t *BalanceTestSuite) Test_GetBalance() {
 	t.service.UserBalance(rr, req)
 
 	t.resp = rr.Result()
-	t.Assert().Equal(http.StatusOK, t.resp.StatusCode)
+	if t.Assert().Equal(http.StatusOK, t.resp.StatusCode) {
+		var balance model.UserBalance
+		if err = json.NewDecoder(t.resp.Body).Decode(&balance); err != nil {
+			t.T().Fatal(err)
+		}
+		t.Assert().NotZero(balance.ID)
+	}
 }
 
 func (t *BalanceTestSuite) Test_GetBalanceUnautorized() {
