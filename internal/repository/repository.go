@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 type IRepository interface {
 	IUserRepository
 	IOrderRepository
+	IBalanceRepository
 }
 
 type Repository struct {
