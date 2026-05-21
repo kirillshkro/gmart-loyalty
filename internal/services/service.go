@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"log"
 	"log/slog"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
+	"github.com/kirillshkro/gmart-loyalty/internal/types"
 )
 
 type Service struct {
@@ -36,6 +38,16 @@ type IBalanceService interface {
 func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
 	if !s.cookieExist(r, authCookie) {
 		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userID := r.Context().Value(types.UserID).(int)
+	balance, err := s.Repo.BalanceByUser(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err = json.NewEncoder(w).Encode(balance); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
