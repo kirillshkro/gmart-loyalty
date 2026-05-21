@@ -14,6 +14,7 @@ import (
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
+	"github.com/kirillshkro/gmart-loyalty/pkg/utils"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -77,6 +78,13 @@ func (t *BalanceTestSuite) Test_GetBalance() {
 	userID, err := t.service.userFromCookie(t.uCookie)
 	if err != nil {
 		t.T().Fatal(err)
+	}
+	for range 5 {
+		no := utils.GenNumberOrder(8)
+		oReq := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewBufferString(no))
+		oReq.AddCookie(t.uCookie)
+		rr := httptest.NewRecorder()
+		t.service.SetOrderUser(rr, oReq)
 	}
 	ctx := context.WithValue(context.TODO(), types.UserID, userID)
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/api/user/balance", nil)
