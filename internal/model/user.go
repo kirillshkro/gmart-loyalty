@@ -7,7 +7,8 @@ type User struct {
 }
 
 type UserProfile struct {
-	ID     int `gorm:"primaryKey"`
-	User   `gorm:"embedded"`
-	Orders []Order `gorm:"foreignKey:UserID;references:ID;constraints:OnDelete:CASCADE"`
+	ID      int `gorm:"primaryKey"`
+	User    `gorm:"embedded"`
+	Orders  []Order     `gorm:"foreignKey:UserID;references:ID;constraints:OnDelete:CASCADE"`
+	Balance UserBalance `gorm:"foreignKey:UserID;references:ID;OnDelete:CASCADE"`
 }
