@@ -16,7 +16,7 @@ func (b Repository) BalanceByUser(userID int) (model.UserBalance, error) {
 		balance model.UserBalance
 		err     error
 	)
-	if balance, err = gorm.G[model.UserBalance](b.db).Select("current", "withdrawn").Where("user_id = ?", userID).First(context.Background()); err != nil {
+	if balance, err = gorm.G[model.UserBalance](b.db).Where("user_id = ?", userID).First(context.Background()); err != nil {
 		return balance, err
 	}
 	return balance, nil
