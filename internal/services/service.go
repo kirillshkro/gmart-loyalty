@@ -52,9 +52,3 @@ func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
-
-func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
-}
-
-func (s Service) UserWithdrawals(w http.ResponseWriter, r *http.Request) {
-}

@@ -10,7 +10,7 @@ import (
 	"github.com/kirillshkro/gmart-loyalty/pkg/utils"
 )
 
-func (s Service) UserWithdraw(w http.ResponseWriter, r *http.Request) {
+func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
 	if !s.cookieExist(r, authCookie) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -42,6 +42,41 @@ func (s Service) UserWithdraw(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusPaymentRequired)
 			return
 		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s Service) UserWithdrawals(w http.ResponseWriter, r *http.Request) {
+	if !s.cookieExist(r, authCookie) {
+		http.Error(w, "User unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	uc, err := r.Cookie(authCookie)
+	if err != nil {
+		http.Error(w, "Invalid cookie", http.StatusInternalServerError)
+		return
+	}
+	userID, err := s.userFromCookie(uc)
+	if err != nil {
+		http.Error(w, "Invalid user id", http.StatusUnauthorized)
+		return
+	}
+
+	withdrawals, err := s.Repo.ListWithdraws(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(withdrawals); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
