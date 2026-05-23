@@ -21,9 +21,9 @@ type Order struct {
 	Number     string `json:"number" gorm:"index;unique;type:varchar(50);not null"`
 	UserID     int
 	Accrual    float64     `json:"accrual" gorm:"type:decimal(10,2); not null"`
-	Status     OrderStatus `json:"status" gorm:"type:enum;not null;index"`
+	Status     OrderStatus `json:"status" gorm:"not null;index"`
 	UploadedAt time.Time   `gorm:"autoCreateTime"`
-	Balance    UserBalance `gorm:"foreignKey:OrderID;references:ID;constraints:OnDelete:SET NULL"`
+	Balance    UserBalance `gorm:"foreignKey:OrderNumber;references:Number;constraints:OnDelete:SET NULL"`
 	User       UserProfile `json:"-"`
 }
 
@@ -41,7 +41,7 @@ func (o Order) AfterCreate(tx *gorm.DB) error {
 	}
 
 	// Создаем новую запись в UserBalance
-	balance.OrderID = o.ID
+	balance.OrderNumber = o.Number
 	balance.UserID = o.UserID
 	balance.Current = currentBalance + o.Accrual
 	balance.Withdrawn = 0
