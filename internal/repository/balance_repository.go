@@ -7,11 +7,13 @@ import (
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type IBalanceRepository interface {
 	BalanceByUser(userID int) (model.UserBalance, error)
 	SetWithdraw(ctx context.Context, withdraw *types.WithdrawRequest) error
+	ListWithdraws(userID int) ([]types.WithdrawResponse, error)
 }
 
 func (b Repository) BalanceByUser(userID int) (model.UserBalance, error) {
@@ -50,4 +52,27 @@ func (b Repository) SetWithdraw(ctx context.Context, withdraw *types.WithdrawReq
 		return nil
 	})
 	return err
+}
+
+func (b *Repository) ListWithdraws(userID int) ([]types.WithdrawResponse, error) {
+	var (
+		withdraws []types.WithdrawResponse
+		withdraw  types.WithdrawResponse
+	)
+	balances, err := gorm.G[model.UserBalance](b.db).Select("order_number", "withdrawn", "updated_at").Where("user_id=?", userID).Order(
+		clause.OrderByColumn{
+			Desc:   true,
+			Column: clause.Column{Name: "updated_at"},
+		},
+	).Find(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	for _, balance := range balances {
+		withdraw.Order = balance.OrderNumber
+		withdraw.ProcessedAt = balance.UpdatedAt
+		withdraw.Sum = int(balance.Withdrawn)
+		withdraws = append(withdraws, withdraw)
+	}
+	return withdraws, nil
 }
