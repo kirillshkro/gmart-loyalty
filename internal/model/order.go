@@ -10,10 +10,10 @@ import (
 type OrderStatus string
 
 const (
-	StatusNew        = "New"
-	StatusProcessing = "Processing"
-	StutusInvalid    = "Invalid"
-	StatusProcessed  = "Processed"
+	StatusNew        OrderStatus = "New"
+	StatusProcessing OrderStatus = "Processing"
+	StutusInvalid    OrderStatus = "Invalid"
+	StatusProcessed  OrderStatus = "Processed"
 )
 
 type Order struct {
