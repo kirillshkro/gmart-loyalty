@@ -72,14 +72,13 @@ func (o Repository) GetAll(ctx context.Context) ([]model.Order, error) {
 	userID := ctx.Value(types.UserID).(int)
 	if orders, err = gorm.G[model.Order](o.db).Order(
 		clause.OrderByColumn{
-			Desc:   false,
+			Desc:   true,
 			Column: clause.Column{Name: "uploaded_at"},
 		},
 	).Where("user_id = ?", userID).Find(ctx); err != nil {
 		return nil, err
 	}
 	return orders, nil
-
 }
 
 func (o Repository) onOrderConflict() *gorm.DB {
