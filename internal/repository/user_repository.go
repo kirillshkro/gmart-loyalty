@@ -16,10 +16,6 @@ type IUserRepository interface {
 	UserByName(username string) (model.UserProfile, error)
 }
 
-type UserRepository struct {
-	db *gorm.DB
-}
-
 func (u *Repository) CreateUser(userProfile model.UserProfile) (int, error) {
 	th := u.onConflict()
 	if err := gorm.G[model.UserProfile](th).Create(context.Background(), &userProfile); err != nil {
