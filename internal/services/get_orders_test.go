@@ -43,10 +43,11 @@ func (s *TestOrderSuite) Test_SortOrders() {
 
 	//проверить что заказы в правильном порядке
 	for i := range len(orders) - 1 {
-		//сравнить каждую пару заказов по дате создания
-		if orders[i].UploadedAt.After(orders[i+1].UploadedAt) {
+		//сравнить каждую пару заказов на убывание даты создания
+		if !orders[i].UploadedAt.After(orders[i+1].UploadedAt) {
 			s.T().Errorf("Orders are not sorted by creation date")
 		}
+		s.service.logger.Println(orders[i].UploadedAt)
 	}
 
 	s.Assert().Equal(http.StatusOK, s.resp.StatusCode)
