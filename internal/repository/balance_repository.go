@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -28,7 +29,10 @@ func (b Repository) BalanceByUser(userID int) (model.UserBalance, error) {
 }
 
 func (b Repository) SetWithdraw(ctx context.Context, withdraw *types.WithdrawRequest) error {
-	userID := ctx.Value(types.UserID).(int)
+	userID, ok := ctx.Value(types.UserID).(int)
+	if !ok {
+		return fmt.Errorf("user_id not found in context or invalid type")
+	}
 	err := b.db.Transaction(func(tx *gorm.DB) error {
 		balance, err := gorm.G[model.UserBalance](b.db).Where("user_id =? and order_number =?", userID, withdraw.Order).First(ctx)
 		if err != nil {

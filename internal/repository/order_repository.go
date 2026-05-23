@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
@@ -57,7 +58,10 @@ func (o Repository) OrderByID(ctx context.Context, id int) (model.Order, error) 
 		order model.Order
 		err   error
 	)
-	userID := ctx.Value("user_id").(int)
+	userID, ok := ctx.Value(types.UserID).(int)
+	if !ok {
+		return model.Order{}, fmt.Errorf("user_id not found in context or invalid type")
+	}
 	if order, err = gorm.G[model.Order](o.db).Where("id = ? AND user_id = ?", id, userID).First(ctx); err != nil {
 		return model.Order{}, err
 	}
@@ -69,7 +73,10 @@ func (o Repository) GetAll(ctx context.Context) ([]model.Order, error) {
 		orders []model.Order
 		err    error
 	)
-	userID := ctx.Value(types.UserID).(int)
+	userID, ok := ctx.Value(types.UserID).(int)
+	if !ok {
+		return nil, fmt.Errorf("user_id not found in context or invalid type")
+	}
 	if orders, err = gorm.G[model.Order](o.db).Order(
 		clause.OrderByColumn{
 			Desc:   true,
@@ -91,9 +98,15 @@ func (o Repository) onOrderConflict() *gorm.DB {
 
 func (o Repository) anotherUser(ctx context.Context) bool {
 	//извлечь user_id
-	userID := ctx.Value(types.UserID).(int)
+	userID, ok := ctx.Value(types.UserID).(int)
+	if !ok {
+		return false
+	}
 	//извлечь номер заказа
-	numOrder := ctx.Value(types.OrderNum).(string)
+	numOrder, ok := ctx.Value(types.OrderNum).(string)
+	if !ok {
+		return false
+	}
 
 	order, _ := gorm.G[model.Order](o.db).Select("user_id").Where("number = ?", numOrder).First(ctx)
 
