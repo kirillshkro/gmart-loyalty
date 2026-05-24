@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
@@ -90,4 +91,22 @@ func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- erro
 		return nil
 	}
 	return nil
+}
+
+func (o *Service) processTaskInPool(task func(w http.ResponseWriter), w http.ResponseWriter) {
+	var wg sync.WaitGroup
+	taskCh := make(chan func(w http.ResponseWriter))
+
+	for range MAX_ORDERS_PER_USER {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for task := range taskCh {
+				task(w)
+			}
+		}()
+	}
+	taskCh <- task
+	close(taskCh)
+	wg.Wait()
 }
