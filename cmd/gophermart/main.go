@@ -21,7 +21,7 @@ import (
 func main() {
 	cfg := config.GetAppConfig()
 	router := setupRouter(cfg)
-	log.Fatal(http.ListenAndServe(cfg.RunAddress, router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func setupRouter(cfg *config.AppConfig) *mux.Router {
