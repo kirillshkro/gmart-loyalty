@@ -20,6 +20,7 @@ type IOrderService interface {
 }
 
 const MAX_ORDERS_PER_USER = 100
+const WORKER_POOL_SIZE = 10
 
 func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	//Получить данные пользователя из куки
@@ -45,29 +46,33 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	errCh := make(chan error, MAX_ORDERS_PER_USER)
-	go func() {
-		err = o.processingOrder(userID, string(numOrder), errCh)
-		close(errCh)
-	}()
-	select {
-	case err := <-errCh:
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			w.WriteHeader(http.StatusOK)
-			return
+
+	task := func(w http.ResponseWriter) {
+		errCh := make(chan error, MAX_ORDERS_PER_USER)
+		go func() {
+			err = o.processingOrder(userID, string(numOrder), errCh)
+			close(errCh)
+		}()
+		select {
+		case err := <-errCh:
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			if _, ok := errors.AsType[*types.ErrInvalidFormatOrder](err); ok {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				return
+			}
+		case <-time.After(5 * time.Second):
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-		if _, ok := errors.AsType[*types.ErrOwnAnotherUser](err); ok {
-			w.WriteHeader(http.StatusConflict)
-			return
-		}
-		if _, ok := errors.AsType[*types.ErrInvalidFormatOrder](err); ok {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-	case <-time.After(5 * time.Second):
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusAccepted)
 	}
-	w.WriteHeader(http.StatusAccepted)
+	o.processTaskInPool(task, w)
 }
 
 func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- error) error {
@@ -97,7 +102,7 @@ func (o *Service) processTaskInPool(task func(w http.ResponseWriter), w http.Res
 	var wg sync.WaitGroup
 	taskCh := make(chan func(w http.ResponseWriter))
 
-	for range MAX_ORDERS_PER_USER {
+	for range WORKER_POOL_SIZE {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
