@@ -22,7 +22,7 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		//Проверка существования куки
 		if !s.cookieExist(r, authCookie) {
-			w.WriteHeader(http.StatusUnauthorized)
+			s.refreshCookie(w)
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -67,6 +67,23 @@ func (s Service) createCookie(userID int) (*http.Cookie, error) {
 		Secure:   false,
 	}
 	return cookie, nil
+}
+
+func (s Service) refreshCookie(resp http.ResponseWriter) {
+	authUser := claims.NewUserClaims()
+	tk, err := authUser.Token()
+	if err != nil {
+		s.logger.Println("error creating token: %w", err)
+	}
+	cookie := &http.Cookie{
+		Name:     "auth_cookie",
+		Value:    tk,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * 7 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+	}
+	http.SetCookie(resp, cookie)
 }
 
 func (s Service) cookieExist(req *http.Request, cookieName string) bool {
