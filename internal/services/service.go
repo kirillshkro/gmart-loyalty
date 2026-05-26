@@ -9,7 +9,6 @@ import (
 
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
-	"github.com/kirillshkro/gmart-loyalty/internal/types"
 )
 
 type Service struct {
@@ -40,7 +39,16 @@ func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	userID := r.Context().Value(types.UserID).(int)
+	uc, err := r.Cookie(authCookie)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	userID, err := s.userFromCookie(uc)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	balance, err := s.Repo.BalanceByUser(userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
