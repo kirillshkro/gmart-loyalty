@@ -18,7 +18,13 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+var (
+	dbLogFile *os.File
+	err       error
+)
+
 func main() {
+	defer dbLogFile.Close()
 	cfg := config.GetAppConfig()
 	router := setupRouter(cfg)
 	log.Fatal(http.ListenAndServe(":8080", router))
@@ -45,7 +51,13 @@ func setupRouter(cfg *config.AppConfig) *mux.Router {
 }
 
 func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
-	dbLog := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	dbLogFile, err = os.OpenFile("/tmp/db.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	if err != nil {
+		return nil, err
+	}
+	dbLog := slog.New(slog.NewJSONHandler(dbLogFile, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
 		Logger:         logger.NewSlogLogger(dbLog, logger.Config{Colorful: true, SlowThreshold: 1000 * time.Millisecond}),
 		PrepareStmt:    true,
