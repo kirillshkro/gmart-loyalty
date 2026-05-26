@@ -51,12 +51,12 @@ func setupRouter(cfg *config.AppConfig) *mux.Router {
 }
 
 func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
-	dbLogFile, err = os.OpenFile("/tmp/db.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	dbLogFile, err = os.OpenFile("db.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
 	dbLog := slog.New(slog.NewJSONHandler(dbLogFile, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: slog.LevelError,
 	}))
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
 		Logger: logger.NewSlogLogger(dbLog, logger.Config{
