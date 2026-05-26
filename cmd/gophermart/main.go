@@ -59,7 +59,11 @@ func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
 		Level: slog.LevelInfo,
 	}))
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
-		Logger:         logger.NewSlogLogger(dbLog, logger.Config{Colorful: true, SlowThreshold: 1000 * time.Millisecond}),
+		Logger: logger.NewSlogLogger(dbLog, logger.Config{
+			Colorful:      true,
+			SlowThreshold: 1000 * time.Millisecond,
+			LogLevel:      logger.Error,
+		}),
 		PrepareStmt:    true,
 		TranslateError: true,
 	})
