@@ -60,6 +60,13 @@ func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	err = db.AutoMigrate(&model.UserProfile{}, &model.Order{}, &model.UserBalance{})
 	return db, err
 }
