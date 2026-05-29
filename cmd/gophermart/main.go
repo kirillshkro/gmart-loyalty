@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -21,7 +25,17 @@ import (
 func main() {
 	cfg := config.GetAppConfig()
 	router := setupRouter(cfg)
-	log.Fatal(http.ListenAndServe(cfg.RunAddress, router))
+	server := &http.Server{
+		Addr:    cfg.RunAddress,
+		Handler: router,
+	}
+	go func() {
+		log.Println("Starting system...")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+	gracefulShutdown(server)
 }
 
 func setupRouter(cfg *config.AppConfig) *mux.Router {
@@ -69,4 +83,20 @@ func setupDB(cfg *config.AppConfig) (*gorm.DB, error) {
 	sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	err = db.AutoMigrate(&model.UserProfile{}, &model.Order{}, &model.UserBalance{})
 	return db, err
+}
+
+func gracefulShutdown(server *http.Server) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+
+	<-sigCh
+	log.Println("Shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced shutdown: %v", err)
+	}
+
+	log.Println("Server stopped")
 }
