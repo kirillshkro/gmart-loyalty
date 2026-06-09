@@ -78,9 +78,8 @@ func (s *TestOrderSuite) Test_UnautorizedGetOrder() {
 func (s *TestOrderSuite) Test_EmptyOrdersList() {
 	//создаем юзера
 	user := model.User{
-		Login:     "emptyorderuser",
-		Password:  "orders",
-		Password2: "orders",
+		Login:    "emptyorderuser",
+		Password: "orders",
 	}
 
 	body, _ := json.Marshal(user)

@@ -55,9 +55,8 @@ func (t *BalanceTestSuite) SetupSuite() {
 	}
 
 	user := model.User{
-		Login:     "balanceuser",
-		Password:  "testpass",
-		Password2: "testpass",
+		Login:    "balanceuser",
+		Password: "testpass",
 	}
 	var reqBody bytes.Buffer
 	if err := json.NewEncoder(&reqBody).Encode(user); err != nil {

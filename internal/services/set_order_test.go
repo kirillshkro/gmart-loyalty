@@ -53,9 +53,8 @@ func (s *TestOrderSuite) SetupSuite() {
 	}
 
 	user := model.User{
-		Login:     "testuser",
-		Password:  "testpass",
-		Password2: "testpass",
+		Login:    "testuser",
+		Password: "testpass",
 	}
 	var reqBody bytes.Buffer
 	if err := json.NewEncoder(&reqBody).Encode(user); err != nil {
@@ -104,9 +103,8 @@ func (s *TestOrderSuite) Test_UnautorizedUser() {
 
 func (s *TestOrderSuite) Test_AnotherUser() {
 	user2 := model.User{
-		Login:     "another",
-		Password:  "dirtyharry",
-		Password2: "dirtyharry",
+		Login:    "another",
+		Password: "dirtyharry",
 	}
 	var reqBody2 bytes.Buffer
 

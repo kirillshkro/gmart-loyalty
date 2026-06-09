@@ -103,14 +103,12 @@ func (s *TestUserSuite) Test_RegisterUser() {
 // Проверяем обработку запроса с существующим именем пользователя
 func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	user1 := model.User{
-		Login:     "existinguser",
-		Password:  "password",
-		Password2: "password",
+		Login:    "existinguser",
+		Password: "password",
 	}
 	user2 := model.User{
-		Login:     "existinguser",
-		Password:  "password2",
-		Password2: "password2",
+		Login:    "existinguser",
+		Password: "password2",
 	}
 
 	reqBody1, _ := json.Marshal(user1)

@@ -38,9 +38,8 @@ func (s *TestUserSuite) Test_Login() {
 
 	//создать юзера для теста
 	testUser := model.User{
-		Login:     "testusermatch",
-		Password:  "password123",
-		Password2: "password123",
+		Login:    "testusermatch",
+		Password: "password123",
 	}
 	var testUserBody bytes.Buffer
 	err := json.NewEncoder(&testUserBody).Encode(testUser)
@@ -58,9 +57,8 @@ func (s *TestUserSuite) Test_Login() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			user := model.User{
-				Login:     tc.login,
-				Password:  tc.password,
-				Password2: tc.password,
+				Login:    tc.login,
+				Password: tc.password,
 			}
 			err := json.NewEncoder(&testUserBody).Encode(user)
 			s.Require().NoError(err)

@@ -39,7 +39,6 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	regUser.Password = string(cryptPass)
-	regUser.Password2 = regUser.Password
 
 	//Создаем профиль пользователя
 
