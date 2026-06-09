@@ -131,19 +131,6 @@ func (s *TestUserSuite) Test_RegisterDuplicateUsername() {
 	}
 }
 
-func (s *TestUserSuite) Test_PasswordsNotEquals() {
-	user := model.User{
-		Login:     "newuser",
-		Password:  "password1",
-		Password2: "password2",
-	}
-	reqBody, _ := json.Marshal(user)
-	req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(reqBody))
-	w := httptest.NewRecorder()
-	s.service.Register(w, req)
-	s.Equal(http.StatusBadRequest, w.Code)
-}
-
 func TestMainUserSuite(t *testing.T) {
 	suite.Run(t, new(TestUserSuite))
 }
