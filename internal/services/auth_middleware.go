@@ -1,6 +1,8 @@
 package services
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,6 +26,27 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+
+		var user model.User
+		newReq := io.NopCloser(r.Body)
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			next.ServeHTTP(w, r)
+			return
+		}
+		//Проверить валидность логин/пароля
+		if ok, err := s.validateUser(user); !ok {
+			if _, ok := errors.AsType[*types.ErrInvalidLogin](err); ok {
+				w.WriteHeader(http.StatusBadRequest)
+				next.ServeHTTP(w, r)
+				return
+			}
+			s.logger.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
+			return
+		}
+		r.Body = newReq
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
