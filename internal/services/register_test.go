@@ -95,7 +95,7 @@ func (s *TestUserSuite) Test_RegisterUser() {
 			req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewBuffer(userJSON))
 			w := httptest.NewRecorder()
 			s.service.Register(w, req)
-			s.Equal(http.StatusBadRequest, w.Code)
+			s.Equal(tc.expectedCode, w.Code)
 		})
 	}
 }
