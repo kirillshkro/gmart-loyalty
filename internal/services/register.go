@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
@@ -23,7 +22,6 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		ok      bool
 		err     error
 	)
-	newReq := io.NopCloser(r.Body)
 	if err = json.NewDecoder(r.Body).Decode(&regUser); err != nil {
 		http.Error(w, "Invalid request", http.StatusInternalServerError)
 		return
@@ -31,11 +29,6 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 
 	if regUser.Login == "" || regUser.Password == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if regUser.Password != regUser.Password2 {
-		http.Error(w, "Passwords do not match", http.StatusBadRequest)
 		return
 	}
 
@@ -69,7 +62,6 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, user_cookie)
-	r.Body = newReq
 	w.Header().Set("Content-Type", "application/json")
 	r.AddCookie(user_cookie)
 	s.Login(w, r)
