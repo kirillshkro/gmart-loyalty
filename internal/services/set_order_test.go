@@ -142,6 +142,7 @@ func (s *TestOrderSuite) Test_InvalidNumOrder() {
 	reqOrder1.AddCookie(s.uCookie)
 	rr := httptest.NewRecorder()
 	s.service.SetOrderUser(rr, reqOrder1)
+	s.Assert().Equal("application/json", rr.Header().Get("Content-Type"))
 	s.Assert().Equal(http.StatusUnprocessableEntity, rr.Code)
 }
 

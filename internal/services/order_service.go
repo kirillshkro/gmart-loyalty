@@ -73,6 +73,8 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}
 	o.processTaskInPool(task, w)
+
+	w.Header().Set("Content-Type", "application/json")
 }
 
 func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- error) error {
