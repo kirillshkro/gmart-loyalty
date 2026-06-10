@@ -74,13 +74,15 @@ func (a *App) setupRouter(service *services.Service) *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/user/register", service.Register).Methods(http.MethodPost)
 	router.HandleFunc("/api/user/login", service.Login).Methods(http.MethodPost)
-	router.HandleFunc("/api/user/orders", service.SetOrderUser).Methods(http.MethodPost)
-	router.HandleFunc("/api/user/orders", service.OrdersByUser).Methods(http.MethodGet)
-	router.HandleFunc("/api/user/balance", service.UserBalance).Methods(http.MethodGet)
-	router.HandleFunc("/api/user/balance/withdraw", service.SetUserWithdraw).Methods(http.MethodPost)
-	router.HandleFunc("/api/user/withdrawals", service.UserWithdrawals).Methods(http.MethodGet)
+
+	authRouter := router.PathPrefix("/api/user").Subrouter()
+	authRouter.Use(service.AuthMiddleware)
+	authRouter.HandleFunc("/orders", service.SetOrderUser).Methods(http.MethodPost)
+	authRouter.HandleFunc("//orders", service.OrdersByUser).Methods(http.MethodGet)
+	authRouter.HandleFunc("/balance", service.UserBalance).Methods(http.MethodGet)
+	authRouter.HandleFunc("/balance/withdraw", service.SetUserWithdraw).Methods(http.MethodPost)
+	authRouter.HandleFunc("/withdrawals", service.UserWithdrawals).Methods(http.MethodGet)
 	router.Use(middleware.LoggerHandler)
-	router.Use(service.AuthMiddleware)
 	return router
 }
 
