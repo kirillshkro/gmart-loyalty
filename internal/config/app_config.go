@@ -37,7 +37,7 @@ func GetAuthConfig() *AuthConfig {
 		once sync.Once
 	)
 	once.Do(func() {
-		if err := cleanenv.ReadConfig(".env", &cfg); err != nil {
+		if err := cleanenv.ReadEnv(&cfg); err != nil {
 			log.Fatal(err)
 		}
 	})
