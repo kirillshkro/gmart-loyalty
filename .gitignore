@@ -25,4 +25,4 @@ vendor/
 #External dev files
 .env
 Dockerfile
-*.sh
+#*.sh
