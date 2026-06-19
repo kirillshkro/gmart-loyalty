@@ -54,6 +54,7 @@ func (s Service) UserBalance(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(balance); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
