@@ -39,7 +39,7 @@ func NewApp(cfg *config.AppConfig) (*App, error) {
 
 func (a *App) setupDB() (*gorm.DB, error) {
 	dbLog := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: slog.LevelWarn,
 	}))
 	db, err := gorm.Open(postgres.Open(a.cfg.DatabaseURI), &gorm.Config{
 		Logger: logger.NewSlogLogger(dbLog, logger.Config{
