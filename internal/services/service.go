@@ -7,24 +7,27 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/sessions"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 )
 
 type Service struct {
-	logger  *log.Logger
-	cfg     *config.AppConfig
-	authCfg *config.AuthConfig
-	Repo    repository.IRepository
+	logger     *log.Logger
+	cfg        *config.AppConfig
+	authCfg    *config.AuthConfig
+	Repo       repository.IRepository
+	cookieStor *sessions.CookieStore
 }
 
 func NewService() *Service {
 	cfg := config.GetAppConfig()
 
 	return &Service{
-		logger:  slog.NewLogLogger(slog.NewJSONHandler(os.Stderr, nil), slog.LevelError),
-		cfg:     cfg,
-		authCfg: config.GetAuthConfig(),
+		logger:     slog.NewLogLogger(slog.NewJSONHandler(os.Stderr, nil), slog.LevelError),
+		cfg:        cfg,
+		authCfg:    config.GetAuthConfig(),
+		cookieStor: sessions.NewCookieStore(),
 	}
 }
 
