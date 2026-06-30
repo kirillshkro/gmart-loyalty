@@ -6,7 +6,6 @@ import (
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/model/claims"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Loginer interface {
@@ -16,9 +15,8 @@ type Loginer interface {
 func (u Service) Login(w http.ResponseWriter, r *http.Request) {
 	//Получить пользователя из запроса
 	var (
-		user    model.User
-		err     error
-		profile model.UserProfile
+		user model.User
+		err  error
 	)
 
 	if err = json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -26,15 +24,11 @@ func (u Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Получить пользователя из базы данных
-	if profile, err = u.Repo.UserByName(user.Login); err != nil {
+	if _, err = u.Repo.UserByName(user.Login); err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(profile.Password), []byte(user.Password)) != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
 	w.WriteHeader(http.StatusOK)
 }
 
