@@ -76,7 +76,7 @@ func (a *App) setupRouter(service *services.Service) *mux.Router {
 	router.HandleFunc("/api/user/login", service.Login).Methods(http.MethodPost)
 
 	authRouter := router.PathPrefix("/api/user").Subrouter()
-	//authRouter.Use(service.AuthMiddleware)
+	authRouter.Use(service.AuthMiddleware)
 	authRouter.HandleFunc("/orders", service.SetOrderUser).Methods(http.MethodPost)
 	authRouter.HandleFunc("/orders", service.OrdersByUser).Methods(http.MethodGet)
 	authRouter.HandleFunc("/balance", service.UserBalance).Methods(http.MethodGet)
