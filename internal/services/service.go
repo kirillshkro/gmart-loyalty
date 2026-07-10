@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/json"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,7 +12,7 @@ import (
 )
 
 type Service struct {
-	logger     *log.Logger
+	logger     *slog.Logger
 	cfg        *config.AppConfig
 	authCfg    *config.AuthConfig
 	Repo       repository.IRepository
@@ -24,7 +23,7 @@ func NewService() *Service {
 	cfg := config.GetAppConfig()
 
 	return &Service{
-		logger:     slog.NewLogLogger(slog.NewJSONHandler(os.Stderr, nil), slog.LevelError),
+		logger:     slog.New(slog.NewJSONHandler(os.Stderr, nil)),
 		cfg:        cfg,
 		authCfg:    config.GetAuthConfig(),
 		cookieStor: sessions.NewCookieStore(),
