@@ -47,7 +47,6 @@ func (s *TestOrderSuite) Test_SortOrders() {
 		if !orders[i].UploadedAt.After(orders[i+1].UploadedAt) {
 			s.T().Errorf("Orders are not sorted by creation date")
 		}
-		s.service.logger.Println(orders[i].UploadedAt)
 	}
 
 	s.Assert().Equal(http.StatusOK, s.resp.StatusCode)
