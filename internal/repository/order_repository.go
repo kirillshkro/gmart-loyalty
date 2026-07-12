@@ -77,7 +77,7 @@ func (o Repository) GetAll(ctx context.Context) ([]model.Order, error) {
 	if !ok {
 		return nil, fmt.Errorf("user_id not found in context or invalid type")
 	}
-	if orders, err = gorm.G[model.Order](o.db).Order(
+	if orders, err = gorm.G[model.Order](o.db).Select("number", "accrual", "status", "uploaded_at").Order(
 		clause.OrderByColumn{
 			Desc:   true,
 			Column: clause.Column{Name: "uploaded_at"},
