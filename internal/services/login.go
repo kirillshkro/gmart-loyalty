@@ -1,8 +1,12 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
 
+	ctypes "github.com/kirillshkro/gmart-loyalty/internal/types"
+
+	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/model/claims"
 )
 
@@ -10,29 +14,39 @@ type Loginer interface {
 	Login(w http.ResponseWriter, r *http.Request)
 }
 
-func (u Service) Login(w http.ResponseWriter, r *http.Request) {
+func (s Service) Login(w http.ResponseWriter, r *http.Request) {
 	//Получить пользователя из запроса
 	var (
-		err error
+		user    model.User
+		err     error
+		ok      bool
+		profile model.UserProfile
 	)
 
-	userCookie, err := r.Cookie(authCookie)
-	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := u.userFromCookie(userCookie)
-	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
+	if user, ok = r.Context().Value(ctypes.UserID).(model.User); !ok {
+		if err = json.NewDecoder(r.Body).Decode(&user); err != nil {
+			s.logger.Error("Bad request")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	//Получить пользователя из базы данных
-	if _, err = u.Repo.UserByID(userID); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+	if profile, err = s.Repo.UserByName(user.Login); err != nil {
+		s.logger.Error("Invalid credentials")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	userCookie, err := s.createCookie(profile.ID)
+	if err != nil {
+		s.logger.Error("Error create cookie")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, userCookie)
+
 	w.WriteHeader(http.StatusOK)
 }
 

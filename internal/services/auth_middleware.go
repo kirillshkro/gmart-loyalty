@@ -41,7 +41,7 @@ func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			s.logger.Println(err)
+			s.logger.Error(err.Error())
 			w.WriteHeader(http.StatusUnauthorized)
 			next.ServeHTTP(w, r)
 			return
@@ -74,7 +74,7 @@ func (s Service) refreshCookie(resp http.ResponseWriter) {
 	authUser := claims.NewUserClaims()
 	tk, err := authUser.Token()
 	if err != nil {
-		s.logger.Println("error creating token: %w", err)
+		s.logger.Error(err.Error())
 	}
 	cookie := &http.Cookie{
 		Name:     "auth_cookie",

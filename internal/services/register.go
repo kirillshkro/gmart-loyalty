@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -23,19 +24,22 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 		err     error
 	)
 	if err = json.NewDecoder(r.Body).Decode(&regUser); err != nil {
-		http.Error(w, "Invalid request", http.StatusInternalServerError)
+		s.logger.Error("Invalid request")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if regUser.Login == "" || regUser.Password == "" {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		s.logger.Error("Invalid request body")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	//Шифруем пароль пользователя
 	cryptPass, err := bcrypt.GenerateFromPassword([]byte(regUser.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Error encrypting password", http.StatusInternalServerError)
+		s.logger.Error("Error encrypting password")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	regUser.Password = string(cryptPass)
@@ -51,17 +55,19 @@ func (s Service) Register(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	user_cookie, err := s.createCookie(userID)
 	if err != nil {
-		http.Error(w, "Error creating cookie", http.StatusInternalServerError)
+		s.logger.Error("Error creating cookie")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(w, user_cookie)
 	w.Header().Set("Content-Type", "application/json")
-	r.AddCookie(user_cookie)
+	ctx := context.WithValue(r.Context(), types.UserID, regUser)
+	r = r.WithContext(ctx)
 	s.Login(w, r)
 }
