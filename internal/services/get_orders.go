@@ -30,16 +30,18 @@ func (o Service) OrdersByUser(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), types.UserID, userID)
 	orders, err := o.Repo.GetAll(ctx)
 	if err != nil {
-		http.Error(w, "Ошибка при получении заказов", http.StatusInternalServerError)
+		o.logger.Error("Ошибка при получении заказов")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if len(orders) == 0 {
-		http.Error(w, "Orders not found", http.StatusNoContent)
+		o.logger.Error("Orders not found")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orders); err != nil {
-		http.Error(w, "Ошибка при кодировании JSON", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
