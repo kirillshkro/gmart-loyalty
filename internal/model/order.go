@@ -22,7 +22,7 @@ type Order struct {
 	UserID     int
 	Accrual    float64     `json:"accrual" gorm:"type:decimal(10,2); not null"`
 	Status     OrderStatus `json:"status" gorm:"not null;index"`
-	UploadedAt time.Time   `gorm:"autoCreateTime"`
+	UploadedAt time.Time   `gorm:"autoCreateTime;index"`
 	Balance    UserBalance `gorm:"foreignKey:OrderNumber;references:Number;constraints:OnDelete:SET NULL"`
 	User       UserProfile `json:"-"`
 }
