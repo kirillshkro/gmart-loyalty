@@ -13,7 +13,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
-	"github.com/kirillshkro/gmart-loyalty/internal/middleware"
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/services"
@@ -39,13 +38,14 @@ func NewApp(cfg *config.AppConfig) (*App, error) {
 
 func (a *App) setupDB() (*gorm.DB, error) {
 	dbLog := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelWarn,
+		Level: slog.LevelInfo,
 	}))
 	db, err := gorm.Open(postgres.Open(a.cfg.DatabaseURI), &gorm.Config{
 		Logger: logger.NewSlogLogger(dbLog, logger.Config{
-			Colorful:      true,
-			SlowThreshold: 1000 * time.Millisecond,
-			LogLevel:      logger.Info,
+			Colorful:             true,
+			SlowThreshold:        200 * time.Millisecond,
+			LogLevel:             logger.Info,
+			ParameterizedQueries: true,
 		}),
 		PrepareStmt:    true,
 		TranslateError: true,
@@ -76,13 +76,11 @@ func (a *App) setupRouter(service *services.Service) *mux.Router {
 	router.HandleFunc("/api/user/login", service.Login).Methods(http.MethodPost)
 
 	authRouter := router.PathPrefix("/api/user").Subrouter()
-	authRouter.Use(service.AuthMiddleware)
 	authRouter.HandleFunc("/orders", service.SetOrderUser).Methods(http.MethodPost)
 	authRouter.HandleFunc("/orders", service.OrdersByUser).Methods(http.MethodGet)
 	authRouter.HandleFunc("/balance", service.UserBalance).Methods(http.MethodGet)
 	authRouter.HandleFunc("/balance/withdraw", service.SetUserWithdraw).Methods(http.MethodPost)
 	authRouter.HandleFunc("/withdrawals", service.UserWithdrawals).Methods(http.MethodGet)
-	router.Use(middleware.LoggerHandler)
 	return router
 }
 
