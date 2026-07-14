@@ -50,18 +50,20 @@ func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
 
 func (s Service) UserWithdrawals(w http.ResponseWriter, r *http.Request) {
 	if !s.cookieExist(r, authCookie) {
-		http.Error(w, "User unauthorized", http.StatusUnauthorized)
+		s.logger.Error("User unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	uc, err := r.Cookie(authCookie)
 	if err != nil {
-		http.Error(w, "Invalid cookie", http.StatusInternalServerError)
+		s.logger.Error("Invalid cookie")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	userID, err := s.userFromCookie(uc)
 	if err != nil {
-		http.Error(w, "Invalid user id", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
