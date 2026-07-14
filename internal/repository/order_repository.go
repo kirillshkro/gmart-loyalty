@@ -40,8 +40,8 @@ func (o Repository) CreateOrder(ctx context.Context, order *model.Order) error {
 			}
 			return err
 		}
-		order.Status = model.StatusProcessed
-		rows, err := gorm.G[model.Order](tx).Where("id = ? AND user_id = ?", order.ID, order.UserID).Update(ctx, "status", order.Status)
+
+		rows, err := gorm.G[model.Order](tx).Where("id = ? AND user_id = ?", order.ID, order.UserID).Update(ctx, "status", model.StatusProcessed)
 		if err != nil {
 			return err
 		}
