@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kirillshkro/gmart-loyalty/internal/config"
+	"github.com/kirillshkro/gmart-loyalty/internal/middleware"
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/repository"
 	"github.com/kirillshkro/gmart-loyalty/internal/services"
@@ -81,6 +82,8 @@ func (a *App) setupRouter(service *services.Service) *mux.Router {
 	authRouter.HandleFunc("/balance", service.UserBalance).Methods(http.MethodGet)
 	authRouter.HandleFunc("/balance/withdraw", service.SetUserWithdraw).Methods(http.MethodPost)
 	authRouter.HandleFunc("/withdrawals", service.UserWithdrawals).Methods(http.MethodGet)
+	router.Use(middleware.LoggerMiddleware)
+	authRouter.Use(middleware.LoggerMiddleware)
 	return router
 }
 

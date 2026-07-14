@@ -1,52 +1,49 @@
 package middleware
 
 import (
-	"fmt"
-	"log/slog"
+	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
-type LogWriter struct {
+// LoggerMiddleware is a middleware that logs request information
+func LoggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Create a custom ResponseWriter to capture the status code and response body
+		wrappedWriter := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		// Process the request
+		next.ServeHTTP(wrappedWriter, r)
+
+		// Calculate duration
+		duration := time.Since(start).Milliseconds()
+
+		// Log the information
+		log.Printf("URI: %s, Method: %s, Request Size: %d, Duration: %d ms, Status Code: %d",
+			r.URL.RequestURI(),
+			r.Method,
+			r.ContentLength,
+			duration,
+			wrappedWriter.statusCode,
+		)
+	})
+}
+
+// responseWriter wraps http.ResponseWriter to capture the status code
+type responseWriter struct {
 	http.ResponseWriter
-	status int
-	size   int
+	statusCode int
+	body       []byte
 }
 
-func (l LogWriter) WriteHeader(statusCode int) {
-	l.status = statusCode
-	l.ResponseWriter.WriteHeader(l.status)
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	rw.body = b
+	return rw.ResponseWriter.Write(b)
 }
 
-func (l LogWriter) Write(b []byte) (int, error) {
-
-	n, err := l.ResponseWriter.Write(b)
-	l.size += n
-	return n, err
-}
-
-func newLogWriter(resp http.ResponseWriter) *LogWriter {
-	return &LogWriter{
-		ResponseWriter: resp,
-		size:           0,
-		status:         http.StatusOK,
-	}
-}
-
-func LoggerHandler(next http.Handler) http.Handler {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		writer := newLogWriter(w)
-		method := r.Method
-		uri := r.RequestURI
-		startTime := time.Now()
-		logger.Info(fmt.Sprintf("Method: %s, uri: %s\n", method, uri))
-		next.ServeHTTP(writer, r)
-		duration := time.Since(startTime)
-		logger.Info(fmt.Sprintf("Time: %d ms, req size: %d, req status: %d\n", duration, writer.size, writer.status))
-	}
-	return http.HandlerFunc(fn)
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
 }
