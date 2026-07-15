@@ -52,6 +52,39 @@ func (s *TestOrderSuite) Test_SortOrders() {
 	s.Assert().Equal(http.StatusOK, s.resp.StatusCode)
 }
 
+func (s *TestOrderSuite) Test_StatusOrders() {
+	userID, err := s.service.userFromCookie(s.uCookie)
+	if err != nil {
+		s.T().Error(err)
+	}
+	ctx := context.WithValue(context.TODO(), types.UserID, userID)
+	//Создаем несколько заказов
+	for range 5 {
+		numOrder := utils.GenNumberOrder(8)
+		reqOrder := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/user/orders", bytes.NewBufferString(numOrder))
+		reqOrder.AddCookie(s.uCookie)
+		rr := httptest.NewRecorder()
+		s.service.SetOrderUser(rr, reqOrder)
+	}
+	//получить список заказов
+	reqGetOrders := httptest.NewRequestWithContext(ctx, http.MethodGet, "/api/user/orders", nil)
+	reqGetOrders.AddCookie(s.uCookie)
+	rr := httptest.NewRecorder()
+	s.service.OrdersByUser(rr, reqGetOrders)
+	//проверить что заказы получены
+	s.resp = rr.Result()
+	var orders []model.Order
+	if err = json.NewDecoder(s.resp.Body).Decode(&orders); err != nil {
+		s.T().Errorf("Error decoding response body: %v", err)
+		return
+	}
+	s.Assert().Positive(len(orders))
+
+	for _, order := range orders {
+		s.Assert().Equal(model.StatusProcessed, order.Status)
+	}
+}
+
 func (s *TestOrderSuite) Test_UnautorizedGetOrder() {
 	userID, err := s.service.userFromCookie(s.uCookie)
 	if err != nil {
