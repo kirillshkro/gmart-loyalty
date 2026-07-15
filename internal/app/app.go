@@ -61,7 +61,7 @@ func (a *App) setupDB() (*gorm.DB, error) {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxIdleTime(30 * time.Minute)
-	err = db.AutoMigrate(&model.UserProfile{}, &model.Order{}, &model.UserBalance{})
+	err = db.AutoMigrate(&model.UserProfile{}, &model.Order{}, &model.UserBalance{}, &model.Withdrawal{})
 	return db, err
 }
 

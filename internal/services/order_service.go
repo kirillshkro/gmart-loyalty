@@ -25,7 +25,7 @@ const WORKER_POOL_SIZE = 10
 func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 	//Получить данные пользователя из куки
 	if !o.cookieExist(r, authCookie) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -46,6 +46,8 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	task := func(w http.ResponseWriter) {
 		errCh := make(chan error, MAX_ORDERS_PER_USER)
@@ -73,8 +75,6 @@ func (o *Service) SetOrderUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}
 	o.processTaskInPool(task, w)
-
-	w.Header().Set("Content-Type", "application/json")
 }
 
 func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- error) error {
@@ -86,7 +86,7 @@ func (o *Service) processingOrder(userID int, numOrder string, errCh chan<- erro
 	//Проверить формат номера заказ
 	if !utils.Valid(string(numOrder)) {
 		errCh <- &types.ErrInvalidFormatOrder{Number: string(numOrder)}
-		order.Status = model.StutusInvalid
+		order.Status = model.StatusInvalid
 		return nil
 	}
 

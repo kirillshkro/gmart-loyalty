@@ -2,13 +2,11 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/kirillshkro/gmart-loyalty/internal/model"
 	"github.com/kirillshkro/gmart-loyalty/internal/types"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type IBalanceRepository interface {
@@ -18,11 +16,9 @@ type IBalanceRepository interface {
 }
 
 func (b Repository) BalanceByUser(userID int) (model.UserBalance, error) {
-	var (
-		balance model.UserBalance
-		err     error
-	)
-	if balance, err = gorm.G[model.UserBalance](b.db).Where("user_id = ?", userID).First(context.Background()); err != nil {
+	var balance model.UserBalance
+	err := b.db.Where("user_id = ?", userID).First(&balance).Error
+	if err != nil {
 		return balance, err
 	}
 	return balance, nil
@@ -33,50 +29,67 @@ func (b Repository) SetWithdraw(ctx context.Context, withdraw *types.WithdrawReq
 	if !ok {
 		return fmt.Errorf("user_id not found in context or invalid type")
 	}
+
 	err := b.db.Transaction(func(tx *gorm.DB) error {
-		balance, err := gorm.G[model.UserBalance](b.db).Where("user_id =? and order_number =?", userID, withdraw.Order).First(ctx)
+		// Получаем общий баланс пользователя
+		var userBalance model.UserBalance
+		err := tx.Where("user_id = ?", userID).First(&userBalance).Error
 		if err != nil {
 			return err
 		}
-		if balance.Current < float64(withdraw.Sum) {
+
+		// Проверяем достаточно ли средств на общем балансе
+		if userBalance.Current < float64(withdraw.Sum) {
 			return &types.ErrInsufficientBalance{
 				UserID:  userID,
-				Balance: balance.Current,
+				Balance: userBalance.Current,
 			}
 		}
-		balance.Current -= float64(withdraw.Sum)
-		balance.Withdrawn = float64(withdraw.Sum)
-		rows, err := gorm.G[model.UserBalance](b.db).Where("user_id = ? and order_number =?", userID, withdraw.Order).Updates(ctx, balance)
-		if err != nil {
+
+		// Создаем запись о выводе средств
+		withdrawal := model.Withdrawal{
+			UserID:      userID,
+			OrderNumber: withdraw.Order,
+			Sum:         float64(withdraw.Sum),
+		}
+
+		if err := tx.Create(&withdrawal).Error; err != nil {
 			return err
 		}
-		if rows == 0 {
-			return errors.New("balance not updated")
+
+		// Обновляем баланс пользователя
+		userBalance.Current -= float64(withdraw.Sum)
+		userBalance.Withdrawn += float64(withdraw.Sum)
+
+		if err := tx.Save(&userBalance).Error; err != nil {
+			return err
 		}
+
 		return nil
 	})
+
 	return err
 }
 
-func (b *Repository) ListWithdraws(userID int) ([]types.WithdrawResponse, error) {
-	var (
-		withdraws []types.WithdrawResponse
-		withdraw  types.WithdrawResponse
-	)
-	balances, err := gorm.G[model.UserBalance](b.db).Select("order_number", "withdrawn", "updated_at").Where("user_id=?", userID).Order(
-		clause.OrderByColumn{
-			Desc:   true,
-			Column: clause.Column{Name: "updated_at"},
-		},
-	).Find(context.Background())
+func (b Repository) ListWithdraws(userID int) ([]types.WithdrawResponse, error) {
+	var withdrawals []types.WithdrawResponse
+
+	// Получаем все записи о выводах для пользователя
+	var dbWithdrawals []model.Withdrawal
+	err := b.db.Where("user_id = ?", userID).Order("processed_at DESC").Find(&dbWithdrawals).Error
 	if err != nil {
 		return nil, err
 	}
-	for _, balance := range balances {
-		withdraw.Order = balance.OrderNumber
-		withdraw.ProcessedAt = balance.UpdatedAt
-		withdraw.Sum = int(balance.Withdrawn)
-		withdraws = append(withdraws, withdraw)
+
+	// Преобразуем в ответные структуры
+	for _, dbWithdrawal := range dbWithdrawals {
+		withdrawal := types.WithdrawResponse{
+			Order:       dbWithdrawal.OrderNumber,
+			ProcessedAt: dbWithdrawal.ProcessedAt,
+			Sum:         int(dbWithdrawal.Sum),
+		}
+		withdrawals = append(withdrawals, withdrawal)
 	}
-	return withdraws, nil
+
+	return withdrawals, nil
 }
