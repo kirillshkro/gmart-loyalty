@@ -1,4 +1,3 @@
-// internal/model/order.go
 package model
 
 import (
@@ -10,10 +9,10 @@ import (
 type OrderStatus string
 
 const (
-	StatusNew        OrderStatus = "New"
-	StatusProcessing OrderStatus = "Processing"
-	StutusInvalid    OrderStatus = "Invalid"
-	StatusProcessed  OrderStatus = "Processed"
+	StatusNew        OrderStatus = "NEW"
+	StatusProcessing OrderStatus = "PROCESSING"
+	StatusInvalid    OrderStatus = "INVALID"
+	StatusProcessed  OrderStatus = "PROCESSED"
 )
 
 type Order struct {
@@ -23,26 +22,24 @@ type Order struct {
 	Accrual    float64     `json:"accrual" gorm:"type:decimal(10,2); not null"`
 	Status     OrderStatus `json:"status" gorm:"not null;index"`
 	UploadedAt time.Time   `gorm:"autoCreateTime;index"`
-	Balance    UserBalance `gorm:"foreignKey:OrderNumber;references:Number;constraints:OnDelete:SET NULL"`
-	User       UserProfile `json:"-"`
+	User       UserProfile `gorm:"foreignKey:UserID"`
 }
 
-// Добавляет в таблицу UserBalance запись с текущим балансом и отсутствием выведенных средств
-// К текущему балансу (Current) добавляется величина в поле Accrual
+// AfterCreate добавляет запись в баланс пользователя после создания заказа
 func (o Order) AfterCreate(tx *gorm.DB) error {
 	var (
 		balance        UserBalance
 		currentBalance float64
 	)
 
-	// Получаем предыдущий баланс пользователя
+	// Получаем текущий баланс пользователя
 	if err := tx.Model(&UserBalance{}).Where("user_id = ?", o.UserID).Select("COALESCE(SUM(current), 0)").Scan(&currentBalance).Error; err != nil {
 		return err
 	}
 
 	// Создаем новую запись в UserBalance
-	balance.OrderNumber = o.Number
 	balance.UserID = o.UserID
+	balance.OrderNumber = o.Number
 	balance.Current = currentBalance + o.Accrual
 	balance.Withdrawn = 0
 
