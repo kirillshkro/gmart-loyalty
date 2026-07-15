@@ -38,7 +38,7 @@ func (s Service) SetUserWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = s.Repo.SetWithdraw(ctx, &withdraw); err != nil {
-		if _, ok := errors.AsType[*types.ErrInsufficientBalance](err); ok {
+		if _, ok := errors.AsType[types.ErrInsufficientBalance](err); ok {
 			w.WriteHeader(http.StatusPaymentRequired)
 			return
 		}
@@ -77,6 +77,8 @@ func (s Service) UserWithdrawals(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	if err = json.NewEncoder(w).Encode(withdrawals); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
